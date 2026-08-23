@@ -1,0 +1,61 @@
+{
+  "artboards": [
+    { "file": "ColdOpen.dc.html",        "title": "01 · Cold open",              "x": 0,    "y": 0,    "w": 412, "h": 915 },
+    { "file": "FindingLeagues.dc.html",  "title": "02 · Finding your leagues",   "x": 492,  "y": 0,    "w": 412, "h": 915 },
+
+    { "file": "Main.dc.html",            "title": "03 · Home — calm",            "x": 0,    "y": 1120, "w": 412, "h": 915 },
+    { "file": "HomeAlarm.dc.html",       "title": "04 · Home — alarm",           "x": 492,  "y": 1120, "w": 412, "h": 915 },
+    { "file": "LeagueDetail.dc.html",    "title": "05 · League detail",          "x": 984,  "y": 1120, "w": 412, "h": 915 },
+    { "file": "Players.dc.html",         "title": "06 · Players",                "x": 1476, "y": 1120, "w": 412, "h": 915 },
+    { "file": "Live.dc.html",            "title": "07 · Live",                   "x": 1968, "y": 1120, "w": 412, "h": 915 },
+
+    { "file": "Notification.dc.html",    "title": "08 · Notification",           "x": 0,    "y": 2240, "w": 412, "h": 915 },
+    { "file": "PermissionPrompt.dc.html","title": "09 · Notification permission","x": 492,  "y": 2240, "w": 412, "h": 915 },
+    { "file": "EmptyAndError.dc.html",   "title": "10 · Empty & error",          "x": 984,  "y": 2240, "w": 412, "h": 915 }
+  ],
+  "annotations": [
+    {
+      "id": "thesis",
+      "x": 0,
+      "y": -330,
+      "w": 904,
+      "text": "FantasyGuru — v1 Android, dark theme. 412 × 915dp, 24dp status inset top, 24dp gesture inset bottom, 20dp screen padding.\n\nThe rule everything else follows: the UI is monochrome slate, and the only saturated colour on screen is status. Red / amber / green appear ONLY where the app reports a lineup condition. The steel-blue accent (#7FA3CC) means tappable, never important. Nothing else gets colour — not branding, not the live scoreboard, not win/loss margins, not the error states. Where something has to stand out, it does it with size, weight or space.\n\nType: Archivo for the verdict and big numbers, IBM Plex Sans for sentences, IBM Plex Mono for league names, timestamps and labels — so machine facts read as machine facts and the hierarchy stays pointed at the verdict."
+    },
+    {
+      "id": "row-onboarding",
+      "x": 0,
+      "y": -150,
+      "w": 412,
+      "text": "ROW 1 — ONBOARDING\nOne field, no password. 02 names the work as it happens rather than shimmering: real steps, real counts, a determinate bar."
+    },
+    {
+      "id": "row-core",
+      "x": 0,
+      "y": 970,
+      "w": 412,
+      "text": "ROW 2 — THE CORE LOOP\nHome in both states, then the three screens it leads into."
+    },
+    {
+      "id": "squint",
+      "x": 492,
+      "y": 970,
+      "w": 412,
+      "text": "THE SQUINT TEST\n03 and 04 differ at one second and across a room: a green sentence and a column of green dots, or a red sentence, three red rails and red dots. Nothing else on either screen carries hue, so the difference cannot be missed or misread.\n\n03 had to feel resolved, not empty — so the calm state carries a short receipt of what was actually checked, all zeros. That is the closed loop: proof of work, not a placeholder."
+    },
+    {
+      "id": "row-system",
+      "x": 0,
+      "y": 2090,
+      "w": 412,
+      "text": "ROW 3 — SYSTEM SURFACES\n08 shows lock screen and expanded shade in one frame. 10 stacks the three empty/error states."
+    },
+    {
+      "id": "content-note",
+      "x": 984,
+      "y": 2090,
+      "w": 412,
+      "text": "CONTENT\nEvery league, score, player, alarm and timestamp is verbatim from the brief. Three additions, all flagged: three bench players on 05 (the brief specifies a bench but no bench content), the playing/to-play counts on 07, and 07 reads 4:12 PM because its job is Sunday afternoon while every other screen is 10:14 AM.\n\nMorning point totals are labelled PROJ / PROJECTED — at 10:14 AM nothing has been scored yet."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}
