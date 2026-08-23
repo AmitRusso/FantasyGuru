@@ -1,0 +1,953 @@
+<title>FantasyGuru v1 Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root {
+    --ground:   #F5F7F9;
+    --surface:  #FFFFFF;
+    --sunken:   #EDF1F5;
+    --ink:      #14202E;
+    --ink-2:    #56606F;
+    --ink-3:    #7C8797;
+    --rule:     #DCE2E9;
+    --rule-2:   #C3CCD7;
+    --accent:   #1A3D6D;
+    --accent-2: #2C5FA8;
+    --crit:     #B3261E;
+    --crit-bg:  #FBEAE8;
+    --warn:     #96590A;
+    --warn-bg:  #FBF1E0;
+    --ok:       #10613A;
+    --ok-bg:    #E4F2EA;
+    --info:     #4C5766;
+    --info-bg:  #E9EDF2;
+
+    --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --f-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --measure: 68ch;
+    --wide: 1120px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #0D1319;
+      --surface:  #141C25;
+      --sunken:   #1A242F;
+      --ink:      #E3E9F0;
+      --ink-2:    #9AA5B3;
+      --ink-3:    #77828F;
+      --rule:     #253039;
+      --rule-2:   #34424F;
+      --accent:   #8FB4E4;
+      --accent-2: #A9C8F0;
+      --crit:     #F08A7E;
+      --crit-bg:  #34191A;
+      --warn:     #E3AC55;
+      --warn-bg:  #2F2415;
+      --ok:       #6FD79E;
+      --ok-bg:    #16291F;
+      --info:     #A6B1BE;
+      --info-bg:  #1D262F;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:   #0D1319;
+    --surface:  #141C25;
+    --sunken:   #1A242F;
+    --ink:      #E3E9F0;
+    --ink-2:    #9AA5B3;
+    --ink-3:    #77828F;
+    --rule:     #253039;
+    --rule-2:   #34424F;
+    --accent:   #8FB4E4;
+    --accent-2: #A9C8F0;
+    --crit:     #F08A7E;
+    --crit-bg:  #34191A;
+    --warn:     #E3AC55;
+    --warn-bg:  #2F2415;
+    --ok:       #6FD79E;
+    --ok-bg:    #16291F;
+    --info:     #A6B1BE;
+    --info-bg:  #1D262F;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 17px;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 24px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .col { max-width: var(--measure); margin-inline: auto; }
+  .wide { max-width: var(--wide); margin-inline: auto; }
+
+  /* ---------- Masthead ---------- */
+  header.mast {
+    max-width: var(--wide);
+    margin: 0 auto;
+    padding: 72px 0 40px;
+    border-bottom: 3px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 7vw, 4.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.025em;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 1.2rem;
+    color: var(--ink-2);
+    max-width: 60ch;
+    margin: 0 0 32px;
+  }
+  .mast-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+  }
+  .mast-meta b { color: var(--ink-2); font-weight: 500; }
+
+  /* ---------- Sections ---------- */
+  section { max-width: var(--wide); margin: 0 auto; padding-top: 72px; }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    border-bottom: 1px solid var(--rule-2);
+    padding-bottom: 14px;
+    margin-bottom: 34px;
+  }
+  .sec-num {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    flex: none;
+  }
+  h2 {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3.4vw, 2.15rem);
+    letter-spacing: -0.018em;
+    line-height: 1.1;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 1.18rem;
+    letter-spacing: -0.008em;
+    margin: 44px 0 12px;
+    text-wrap: balance;
+  }
+  h4 {
+    font-family: var(--f-mono);
+    font-weight: 700;
+    font-size: 11.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 32px 0 10px;
+  }
+  p { margin: 0 0 18px; }
+  a { color: var(--accent-2); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; border-radius: 2px; }
+  strong { font-weight: 600; color: var(--ink); }
+  code {
+    font-family: var(--f-mono);
+    font-size: 0.85em;
+    background: var(--sunken);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+  ul, ol { margin: 0 0 18px; padding-left: 1.3em; }
+  li { margin-bottom: 8px; }
+
+  .lede {
+    font-size: 1.08rem;
+    color: var(--ink-2);
+    border-left: 3px solid var(--accent);
+    padding-left: 20px;
+    margin: 0 0 34px;
+  }
+
+  /* ---------- Callout ---------- */
+  .flag {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 14px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--warn);
+    border-radius: 4px;
+    padding: 18px 22px;
+    margin: 28px 0;
+  }
+  .flag.crit { border-left-color: var(--crit); }
+  .flag.ok { border-left-color: var(--ok); }
+  .flag-label {
+    grid-column: 1 / -1;
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--warn);
+    margin-bottom: 6px;
+  }
+  .flag.crit .flag-label { color: var(--crit); }
+  .flag.ok .flag-label { color: var(--ok); }
+  .flag p { grid-column: 1 / -1; margin: 0 0 10px; font-size: 0.96rem; }
+  .flag p:last-child { margin-bottom: 0; }
+
+  /* ---------- Tables ---------- */
+  .tw { overflow-x: auto; margin: 24px 0 30px; border: 1px solid var(--rule); border-radius: 5px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-family: var(--f-display); font-size: 14.5px; }
+  th {
+    text-align: left;
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--rule-2);
+    white-space: nowrap;
+    background: var(--sunken);
+  }
+  td {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.mono, th.mono { font-family: var(--f-mono); font-size: 12.5px; }
+  td.num { text-align: right; font-family: var(--f-mono); font-size: 13px; }
+
+  /* ---------- Severity chips ---------- */
+  .chip {
+    display: inline-block;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .chip.crit { background: var(--crit-bg); color: var(--crit); }
+  .chip.warn { background: var(--warn-bg); color: var(--warn); }
+  .chip.info { background: var(--info-bg); color: var(--info); }
+  .chip.ok   { background: var(--ok-bg);   color: var(--ok); }
+
+  /* ---------- Card grids ---------- */
+  .cards { display: grid; gap: 16px; margin: 26px 0 30px; }
+  .cards.c3 { grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 22px;
+  }
+  .card-cad {
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .card h5 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 1.02rem;
+    margin: 0 0 10px;
+    letter-spacing: -0.008em;
+  }
+  .card p { font-size: 0.92rem; margin-bottom: 12px; color: var(--ink-2); }
+  .card p:last-child { margin-bottom: 0; }
+  .card ul { font-size: 0.88rem; color: var(--ink-2); margin-bottom: 0; padding-left: 1.15em; }
+  .card code { font-size: 0.8em; }
+
+  /* ---------- Weekly rhythm band ---------- */
+  .rhythm {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--surface);
+    margin: 26px 0 30px;
+  }
+  .beat { padding: 18px 16px; border-right: 1px solid var(--rule); }
+  .beat:last-child { border-right: none; }
+  .beat.peak { background: var(--sunken); box-shadow: inset 0 3px 0 var(--accent); }
+  .beat-when {
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 8px;
+  }
+  .beat.peak .beat-when { color: var(--accent); }
+  .beat-name {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 0.98rem;
+    margin-bottom: 6px;
+  }
+  .beat p { font-size: 0.84rem; color: var(--ink-2); margin: 0; line-height: 1.45; }
+
+  /* ---------- Verdict mock ---------- */
+  .mock {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+    margin: 26px 0 12px;
+  }
+  .screen {
+    background: #101820;
+    border: 1px solid #24303C;
+    border-radius: 10px;
+    padding: 24px;
+    color: #E3E9F0;
+    font-family: var(--f-display);
+  }
+  .screen-chrome {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #6B7885;
+    margin-bottom: 20px;
+  }
+  .verdict {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    line-height: 1.06;
+    margin-bottom: 8px;
+  }
+  .verdict.good { color: #6FD79E; }
+  .verdict.bad { color: #F08A7E; }
+  .verdict-sub { font-size: 0.86rem; color: #94A0AD; margin-bottom: 20px; }
+  .prob {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 0;
+    border-top: 1px solid #24303C;
+  }
+  .prob-sev { width: 3px; align-self: stretch; border-radius: 2px; flex: none; }
+  .prob-sev.c { background: #F08A7E; }
+  .prob-sev.w { background: #E3AC55; }
+  .prob-sev.i { background: #6B7885; }
+  .prob-main { flex: 1; }
+  .prob-t { font-size: 0.93rem; font-weight: 600; margin-bottom: 3px; }
+  .prob-m { font-family: var(--f-mono); font-size: 10.5px; color: #6B7885; letter-spacing: 0.03em; }
+  .prob-go {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #8FB4E4;
+    white-space: nowrap;
+    align-self: center;
+  }
+  .caption {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+    margin: 0 0 30px;
+    line-height: 1.5;
+  }
+
+  /* ---------- Build timeline ---------- */
+  .sprint { border-top: 1px solid var(--rule-2); margin: 26px 0 8px; }
+  .day {
+    display: grid;
+    grid-template-columns: 128px 1fr;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .day-when {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+  .day-what { font-family: var(--f-display); font-size: 0.98rem; }
+  .day-what b { font-weight: 600; }
+  .day-what span { display: block; color: var(--ink-2); font-size: 0.88rem; margin-top: 4px; }
+
+  details {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 0;
+    margin: 14px 0;
+  }
+  summary {
+    cursor: pointer;
+    padding: 15px 20px;
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: 0.96rem;
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸ "; color: var(--accent); font-size: 0.8em; }
+  details[open] summary::before { content: "▾ "; }
+  details > div { padding: 0 20px 18px; font-size: 0.94rem; }
+  details pre {
+    background: var(--sunken);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  footer {
+    max-width: var(--wide);
+    margin: 90px auto 0;
+    padding-top: 26px;
+    border-top: 3px solid var(--ink);
+    font-family: var(--f-mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+    line-height: 1.8;
+  }
+  footer a { color: var(--accent-2); }
+
+  @media (max-width: 640px) {
+    body { padding: 0 18px 80px; font-size: 16px; }
+    header.mast { padding-top: 48px; }
+    .day { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+
+<header class="mast">
+  <p class="eyebrow">Build Specification · Version 1</p>
+  <h1>FantasyGuru v1</h1>
+  <p class="standfirst">A cross-league dashboard for Sleeper, and a Sunday-morning alarm that tells you whether any of your lineups are broken while you can still fix them.</p>
+  <div class="mast-meta">
+    <span><b>Scope</b> Sleeper only · redraft · Expo · <b>Android first</b></span>
+    <span><b>Target</b> Week 5–6, mid-October 2026</span>
+    <span><b>Revised</b> Aug 23, 2026 · rev 3</span>
+  </div>
+</header>
+
+<!-- ============ 1 ============ -->
+<section id="stack">
+  <div class="sec-head"><span class="sec-num">§1</span><h2>Stack</h2></div>
+
+  <div class="col">
+    <p class="lede">This is a read-heavy, cache-dominated app with one hard scheduling requirement and no write path. That shape should drive every choice below — the interesting decisions are about caching, scheduling, and app-store lead times, not about the framework.</p>
+    <p><strong>Android is the product; the other targets come free.</strong> Expo Router with React Native Web compiles the same source to Android, iOS, and a real website. v1 ships as an Android app, because that is where feedback will come from fastest and where the notification story has no caveats. iOS is built from what Android users report — not from guesses — and the web build costs almost nothing to keep as a front door.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Choice</th><th>Why this one</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Client</td><td class="mono">Expo · Expo Router · TypeScript</td><td>One codebase to iOS, Android, and web. File-based routing that works identically on all three. React Native Web renders the same components in a browser.</td></tr>
+        <tr><td>Styling</td><td class="mono">NativeWind</td><td>Tailwind syntax that compiles to React Native styles, so the web and native builds share one visual language instead of two.</td></tr>
+        <tr><td>Native builds</td><td class="mono">EAS Build + EAS Submit</td><td>Cloud builds and store submission without maintaining Xcode and Android Studio toolchains locally.</td></tr>
+        <tr><td>Backend</td><td class="mono">Standalone API — Fly.io or Railway</td><td><strong>Split out from the client.</strong> Sync loops, rule engine, and alarm dispatcher live in a service all three clients call. See §1.2.</td></tr>
+        <tr><td>Database</td><td class="mono">Postgres — Neon</td><td>The data is relational (leagues ↔ rosters ↔ players). Branching gives every PR its own dataset.</td></tr>
+        <tr><td>ORM</td><td class="mono">Drizzle</td><td>SQL-shaped API that keeps the sync queries readable, and light enough not to dominate cold starts.</td></tr>
+        <tr><td>Cache</td><td class="mono">Upstash Redis</td><td>HTTP-based, no connection pooling pain. Holds hot Sleeper responses keyed by league.</td></tr>
+        <tr><td>Scheduler</td><td class="mono">Upstash QStash → protected route</td><td><strong>Decided:</strong> external scheduler, not platform cron. See §1.1.</td></tr>
+        <tr><td>Notifications</td><td class="mono">expo-notifications + Resend</td><td>Native push through APNs/FCM once the apps ship; email from day one. §5.3 has the phased plan.</td></tr>
+        <tr><td>Web hosting</td><td class="mono">Vercel</td><td>The Expo web export deploys as a normal site. No review, no gate, live whenever you push.</td></tr>
+        <tr><td>Errors</td><td class="mono">Sentry</td><td>You need to know about a broken sync before Sunday, not during it.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>1.1 &nbsp;The cron trap</h3>
+
+    <div class="flag crit">
+      <p class="flag-label">Blocking constraint</p>
+      <p>Vercel's Hobby plan permits cron <strong>once per day</strong>, and fires it anywhere inside a <strong>±59 minute</strong> window. Your entire product is a notification that must land between 10:00 and 11:00 ET on Sunday, ahead of the 1pm kickoffs. Hobby cannot do that, and a deploy with a more frequent cron expression fails at build time rather than degrading quietly.</p>
+    </div>
+
+    <p><strong>Decided: an external scheduler.</strong> Upstash QStash calls a protected route on the backend service. Free tier, minute-level precision, no platform plan upgrade, and it stays correct if the backend later moves hosts. The alternative — GitHub Actions cron — is itself routinely 10–30 minutes late under load, which reintroduces the exact problem being solved.</p>
+    <p>The scheduled route must be <strong>idempotent</strong> and gated behind a shared secret. External schedulers retry on timeout, and a retry must never mean a second notification. The unique constraint on <code>alarms_sent</code> in §2.3 is what enforces this.</p>
+
+    <h3>1.2 &nbsp;Split the backend out from the client</h3>
+    <p>Once the client is Expo rather than Next.js, there is no framework left holding the API, and that is a gift rather than a problem. Put the sync loops, the rule engine, and the alarm dispatcher in a standalone service that all three clients call.</p>
+    <p><strong>The rule engine in particular should be pure functions over plain JSON</strong> — no framework, no database access, no HTTP. It takes rosters, players, and league settings; it returns a list of problems. That makes it trivially testable against fixtures, and it is the one piece of this codebase that genuinely must not have bugs.</p>
+    <p>Resist Expo's own API Routes for this. They are real and improving, but your backend needs scheduled jobs, a concurrency limiter, and a retry queue — that wants a boring always-on server, not the newest thing in the ecosystem.</p>
+
+    <h3>1.3 &nbsp;The store gates — do this arithmetic before anything else</h3>
+    <p>With iOS deferred and the September 9 deadline released, one gate remains and it is now a scheduling item rather than a crisis.</p>
+    <ul>
+      <li><strong>Google Play closed testing</strong> — personal accounts created after 13 Nov 2023 must keep <strong>at least 12 testers opted in continuously for 14 days</strong>, then apply for production access, which Google reviews in up to 7 more days. Roughly 21 days end to end.</li>
+      <li><strong>Apple Developer enrollment</strong> — <span class="chip info">Deferred</span> off the critical path entirely. Worth starting the $99 enrollment anyway, because it is free waiting that runs in the background and non-US individuals see 2 days to 2 weeks.</li>
+    </ul>
+    <p>Start the closed test the day you have a build that launches, however unfinished. Twelve testers for fourteen days is exactly what league-mates are for — name them this week, because the clock does not start until they are opted in.</p>
+
+    <h3>1.4 &nbsp;Week 1 was the worst week to launch this. Mid-October is the best.</h3>
+
+    <div class="flag ok">
+      <p class="flag-label">The deadline slipping is an upgrade, not a compromise</p>
+      <p><strong>There are no bye weeks in the 2026 NFL season until Week 5.</strong> Byes run Week 5 through Week 14, peaking at six teams in Week 11, with none at all in Week 12. Rule 2 — bye-week player in a starting slot — is one of your three critical alarms, and for the first four weeks of the season <em>it is physically incapable of firing</em>. Injury designations are also thin early, before the attrition accumulates.</p>
+      <p>A Week 1 launch would have shipped the alarm into the four weeks it has least to say. Launching around <strong>Week 5–6, mid-October</strong>, puts first contact in the window where the product is loudest: four teams on bye in Week 6, four in Week 7, four in Week 8, six in Week 11. Every one of those is a week where a real user gets a real save.</p>
+    </div>
+
+    <p>This also buys back the scope that was cut under deadline pressure. Rules 4–7 move back in. The live scoreboard becomes viable. Rule 7 gets tuned against several weeks of real league data instead of guesswork — which matters, because it is the rule most likely to misfire.</p>
+    <p>The cost is that you launch into a season already in progress, so the first-run experience needs to handle a user arriving in Week 6 with five weeks of history behind them. That is a smaller problem than shipping an alarm with nothing to report.</p>
+  </div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="workflow">
+  <div class="sec-head"><span class="sec-num">§2</span><h2>How the app works</h2></div>
+
+  <div class="col">
+    <h3>2.1 &nbsp;Onboarding is the whole advantage — protect it</h3>
+    <p>Sleeper's API needs no token, which means your first-run experience can be something no competitor with an ESPN or Yahoo integration can match:</p>
+    <ol>
+      <li>One input on the landing page: <strong>your Sleeper username</strong>.</li>
+      <li><code>GET /v1/user/{username}</code> → <code>user_id</code>.</li>
+      <li><code>GET /v1/user/{user_id}/leagues/nfl/2026</code> → every league.</li>
+      <li>Dashboard renders. <strong>Under ten seconds, no password, no OAuth, no email.</strong></li>
+      <li><em>Only then</em> — after they have seen their own leagues on screen — do you ask for anything.</li>
+    </ol>
+    <p>That ordering is not a nicety, it is the product's single largest structural advantage. Every signup field you add before step 4 spends it.</p>
+
+    <div class="flag">
+      <p class="flag-label">Data model gotcha</p>
+      <p>Sleeper usernames are mutable. Persist the <code>user_id</code> as the identity and treat the username purely as a lookup key, or returning users will silently fork into new accounts.</p>
+    </div>
+
+    <h3>2.2 &nbsp;Three sync loops</h3>
+  </div>
+
+  <div class="cards c3">
+    <div class="card">
+      <p class="card-cad">Loop A · Daily 03:00 ET</p>
+      <h5>Player universe</h5>
+      <p><code>GET /v1/players/nfl</code> — roughly 5MB and 11k players. Fetch it <strong>once globally</strong>, never per user or per request, and write it into a <code>players</code> table.</p>
+      <p>This is the single most consequential caching decision in the app. Also refresh <code>/v1/state/nfl</code> for the current week.</p>
+    </div>
+    <div class="card">
+      <p class="card-cad">Loop B · On demand, cached</p>
+      <h5>League state</h5>
+      <p>Keyed by <code>league_id</code>, <strong>not by user</strong> — two members of the same league share one cache entry, which materially changes your rate-limit math.</p>
+      <ul>
+        <li><code>/league/{id}</code> — settings, scoring, roster slots</li>
+        <li><code>/league/{id}/rosters</code></li>
+        <li><code>/league/{id}/users</code></li>
+        <li><code>/league/{id}/matchups/{week}</code></li>
+      </ul>
+    </div>
+    <div class="card">
+      <p class="card-cad">Loop C · Scheduled</p>
+      <h5>Alarm evaluation</h5>
+      <p>Sun 09:00 and 11:30 ET, plus Thu 18:00 and Mon 18:00 ET for the standalone games.</p>
+      <p>For each registered user: sync leagues, run the rule engine, <strong>diff against alarms already sent</strong>, dispatch only what is new.</p>
+    </div>
+  </div>
+
+  <div class="col">
+    <h4>Cache TTL by time of week</h4>
+    <p>A fixed TTL is wrong for this app. Nothing moves Tuesday through Friday; everything moves in one four-hour window.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Window</th><th class="mono">TTL</th><th>Reasoning</th></tr></thead>
+      <tbody>
+        <tr><td>Tue – Fri</td><td class="mono">6 hours</td><td>Static. One refresh after Wednesday waivers processes covers the whole stretch.</td></tr>
+        <tr><td>Saturday</td><td class="mono">1 hour</td><td>Lineups begin moving; injury designations firm up.</td></tr>
+        <tr><td>Sun 06:00 – 13:00 ET</td><td class="mono">5 minutes</td><td>Peak. Everyone is setting lineups at once and stale data is actively harmful.</td></tr>
+        <tr><td>Sun 13:00 – 24:00 ET</td><td class="mono">60 seconds</td><td>Games live. Scores only — rosters are locked.</td></tr>
+        <tr><td>Monday</td><td class="mono">15 minutes</td><td>MNF, plus the aftermath view.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <h3>2.3 &nbsp;Rate-limit math</h3>
+    <p>Sleeper's published guidance is to stay under <strong>1,000 calls per minute</strong> or risk an IP block. One league sync is four calls. At 1,000 users averaging three leagues you have ~3,000 memberships, but overlap means perhaps 2,200 distinct leagues — roughly <strong>8,800 calls</strong> per full sweep. Spread across a ten-minute window with a concurrency limiter at ~10 you sit near 880/min. That is workable and it is not comfortable.</p>
+    <p>Build the concurrency limiter and the per-league cache <strong>on day one</strong>. Retrofitting either one under real load, on a Sunday morning, with an IP block in progress, is the failure mode that ends the project.</p>
+
+    <details>
+      <summary>Core schema — the seven tables v1 actually needs</summary>
+      <div>
+<pre>users            id, sleeper_user_id, username, email, tz,
+                 push_subscription, created_at
+
+leagues          sleeper_league_id, name, season, scoring_settings,
+                 roster_positions, total_rosters, synced_at
+
+memberships      user_id, league_id, roster_id           -- join table
+
+rosters          league_id, roster_id, owner_user_id,
+                 players[], starters[], synced_at
+
+players          sleeper_player_id, full_name, team, position,
+                 status, injury_status, practice_participation,
+                 depth_chart_order, updated_at
+
+team_bye_weeks   team (32 rows), bye_week                -- hand-maintained
+
+alarms_sent      user_id, league_id, rule, player_id, week, sent_at
+                 -- UNIQUE(user_id, league_id, rule, player_id, week)</pre>
+        <p style="margin-top:14px">The unique constraint on <code>alarms_sent</code> is what makes the notification path idempotent. It is one line and it is the difference between a useful app and one people mute in week two.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="alarm">
+  <div class="sec-head"><span class="sec-num">§3</span><h2>The Lineup Alarm</h2></div>
+
+  <div class="col">
+    <p class="lede">Every rule returns a fact, never an opinion. That constraint is the feature — it means the app is never embarrassingly wrong in front of someone using it for the first time, which is a promise no projection-based tool can make.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Rule</th><th>Severity</th><th class="mono">Detection</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num">1</td><td>Empty starting slot</td><td><span class="chip crit">Critical</span></td><td class="mono">starters[i] == "0" or null</td></tr>
+        <tr><td class="num">2</td><td>Bye-week player in a starting slot</td><td><span class="chip crit">Critical</span></td><td class="mono">player.team ∈ byeWeeks[week]</td></tr>
+        <tr><td class="num">3</td><td>OUT / IR / SUS / PUP starting</td><td><span class="chip crit">Critical</span></td><td class="mono">injury_status ∈ {Out, IR, Sus, PUP}</td></tr>
+        <tr><td class="num">4</td><td>DOUBTFUL starting</td><td><span class="chip warn">Warning</span></td><td class="mono">injury_status == "Doubtful"</td></tr>
+        <tr><td class="num">5</td><td>QUESTIONABLE starting, did not practice</td><td><span class="chip info">Info</span></td><td class="mono">status == "Questionable" &amp;&amp;<br>practice_participation == "DNP"</td></tr>
+        <tr><td class="num">6</td><td>Roster below league minimum</td><td><span class="chip warn">Warning</span></td><td class="mono">count(players) &lt; minimum</td></tr>
+        <tr><td class="num">7</td><td><strong>Cross-league inconsistency</strong> — started here, benched there</td><td><span class="chip info">Info</span></td><td class="mono">pid ∈ A.starters &amp;&amp;<br>pid ∈ (B.players − B.starters)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <p>Rule 7 is the one nobody else can compute, because nobody else holds all of a person's leagues at once. It is also the one that will destroy the product if it is naive.</p>
+
+    <div class="flag">
+      <p class="flag-label">Rule 7 suppression clause</p>
+      <p>Fire only when the benched instance is <strong>not forced by roster construction</strong> — that is, the player would be legal in an open or flex slot in league B, <em>and</em> the player currently occupying that slot has a worse injury status or the slot is empty. Without this clause the rule fires on nearly every shared player every week, means nothing, and teaches people to ignore your notifications.</p>
+    </div>
+
+    <div class="flag crit">
+      <p class="flag-label">Missing data — must be supplied by you</p>
+      <p>The Sleeper player object carries <code>status</code>, <code>injury_status</code>, and <code>practice_participation</code>, but <strong>no bye week</strong>. You need your own 32-row <code>team_bye_weeks</code> table, hand-entered from the published schedule. It is the cheapest artifact in this entire spec and by far the most humiliating one to get wrong — a false bye-week alarm in Week 5 is worse than no alarm at all. Enter it, then verify it a second time from a different source.</p>
+    </div>
+
+    <h3>3.1 &nbsp;Notification discipline</h3>
+    <p>This section, more than the rule table, determines whether the app survives to Week 4.</p>
+    <ul>
+      <li><strong>Push only for Critical</strong>, and only in the Sunday-morning and Thursday/Monday-evening windows.</li>
+      <li><strong>One notification per user per window</strong>, aggregated — <em>"3 problems across 2 leagues"</em> — never one per problem.</li>
+      <li><strong>Never send the same alarm twice.</strong> That is what <code>alarms_sent</code> is for.</li>
+      <li><strong>Never between midnight and 07:00 local.</strong> Store the user's timezone at signup.</li>
+      <li><strong>Hard ceiling of four pushes per user per week.</strong> If you would exceed it, drop the lowest severity rather than raising the cap.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="feel">
+  <div class="sec-head"><span class="sec-num">§4</span><h2>Look, feel, and the weekly hook</h2></div>
+
+  <div class="col">
+    <h3>4.1 &nbsp;The first second answers one question</h3>
+    <p>Not a nav bar, not a logo, not a stat grid. The top of the dashboard is a single unambiguous verdict, and everything else on the page is supporting material.</p>
+  </div>
+
+  <div class="mock">
+    <div class="screen">
+      <p class="screen-chrome">Sunday 10:14 AM · Week 3</p>
+      <p class="verdict good">You're set.</p>
+      <p class="verdict-sub">All 4 lineups are legal and healthy. Next check at 11:30.</p>
+    </div>
+    <div class="screen">
+      <p class="screen-chrome">Sunday 10:14 AM · Week 3</p>
+      <p class="verdict bad">3 things need you.</p>
+      <p class="verdict-sub">Across 2 of your 4 leagues · 2h 46m until kickoff</p>
+      <div class="prob">
+        <span class="prob-sev c"></span>
+        <span class="prob-main">
+          <span class="prob-t">Puka Nacua is on bye — starting at WR2</span>
+          <span class="prob-m">DYNASTY DEGENERATES</span>
+        </span>
+        <span class="prob-go">FIX →</span>
+      </div>
+      <div class="prob">
+        <span class="prob-sev c"></span>
+        <span class="prob-main">
+          <span class="prob-t">Empty FLEX slot</span>
+          <span class="prob-m">THE LEAGUE OF ORDINARY GENTLEMEN</span>
+        </span>
+        <span class="prob-go">FIX →</span>
+      </div>
+      <div class="prob">
+        <span class="prob-sev i"></span>
+        <span class="prob-main">
+          <span class="prob-t">You started Bijan here, benched him in Ordinary Gentlemen</span>
+          <span class="prob-m">DYNASTY DEGENERATES · CROSS-LEAGUE</span>
+        </span>
+        <span class="prob-go">VIEW →</span>
+      </div>
+    </div>
+  </div>
+  <p class="caption wide">Both states of the verdict. The calm state is not a placeholder — it is the state most users will see most weeks, and it should feel like a closed loop rather than an empty screen.</p>
+
+  <div class="col">
+    <div class="flag ok">
+      <p class="flag-label">Design the calm state first</p>
+      <p>Most weeks, for most users, nothing is wrong. Most apps punish that with a wall of data. "You're set." — large, green, no detail — is the reward for opening the app, and it is what makes opening it a habit rather than a chore.</p>
+    </div>
+
+    <h3>4.2 &nbsp;Deep links are load-bearing</h3>
+    <p>The API is read-only. You cannot fix anything. So every single alarm must terminate in a one-tap jump to the exact place in Sleeper where the fix happens. If the user has to go find the league themselves, you have added a step to their Sunday instead of removing one, and that is the entire difference between useful and irritating.</p>
+
+    <div class="flag crit">
+      <p class="flag-label">Unverified — check this in week one</p>
+      <p>Sleeper does not publish a deep-link scheme, and I could not confirm that a documented <code>sleeper://</code> URI or universal link exists. <strong>Test this on day one, not on day fourteen.</strong> Open a league in the Sleeper mobile app and inspect the share sheet; check whether <code>sleeper.com/leagues/{id}</code> triggers a universal link into the installed app.</p>
+      <p>Going native improves the odds here: <code>Linking.openURL()</code> from one installed app to another is a first-class path, where a browser handing off to an app is not. But it does not create a scheme that does not exist. If none does, the fallback is the league URL in a browser — noticeably worse, and it reshapes the alarm itself: fewer and higher-value alerts, because each one now costs the user more effort to act on.</p>
+    </div>
+
+    <h3>4.3 &nbsp;Design for four moments, not for daily active users</h3>
+    <p>Fantasy football is not a daily-use product. Building for daily engagement produces a worse app and a frustrated founder.</p>
+  </div>
+
+  <div class="rhythm">
+    <div class="beat">
+      <p class="beat-when">Tue AM</p>
+      <p class="beat-name">Aftermath</p>
+      <p>How you did. Who got hurt. Waiver targets — v1.1.</p>
+    </div>
+    <div class="beat">
+      <p class="beat-when">Wed</p>
+      <p class="beat-name">Waivers</p>
+      <p>Quiet in v1. This is where the cross-league waiver wire lands next.</p>
+    </div>
+    <div class="beat peak">
+      <p class="beat-when">Sun 10:00 ET</p>
+      <p class="beat-name">The Alarm</p>
+      <p>The moment. This single window is your entire retention strategy.</p>
+    </div>
+    <div class="beat">
+      <p class="beat-when">Sun 13:00–20:00</p>
+      <p class="beat-name">Live</p>
+      <p>Cross-league scoreboard. Every matchup, one screen.</p>
+    </div>
+    <div class="beat">
+      <p class="beat-when">Mon night</p>
+      <p class="beat-name">Close</p>
+      <p>Final results, and the week's record across all leagues.</p>
+    </div>
+  </div>
+
+  <div class="col">
+    <h3>4.4 &nbsp;The sleeper hit: the cross-league scoreboard</h3>
+    <p>Every matchup you have, in every league, on one screen, updating through Sunday afternoon. It is cheap — the matchups endpoint returns points already computed in each league's own scoring — and it is the screen people will leave open on a second monitor for four hours. It is also, by some distance, the most likely thing here to get screenshotted into a group chat. If you find a spare weekend before Week 1, build this before anything else optional.</p>
+
+    <h3>4.5 &nbsp;Visual direction</h3>
+    <ul>
+      <li><strong>Dark-first.</strong> This gets used on a couch, and every app it sits beside is dark. Light mode is polite, not primary.</li>
+      <li><strong>Dense, not airy.</strong> Fantasy players are comfortable with a lot of numbers. Over-whitespacing this into a marketing page makes it feel like a toy. It is a tool.</li>
+      <li><strong>Colour means status and nothing else.</strong> Red is broken, amber is risk, green is fine, grey is everything else. The moment you use red as a brand accent you have destroyed the vocabulary the alarm depends on — so the brand accent must live outside the traffic-light range entirely.</li>
+      <li><strong>Team colour and a position chip carry player identity</strong>, not headshots. Headshots are a licensing question you do not want in v1.</li>
+      <li><strong>One big number per row.</strong> Points. Everything else is secondary text at secondary weight.</li>
+      <li><strong>Speed is part of the aesthetic.</strong> Server-render everything; the dashboard should be painted before a spinner would have had cause to appear.</li>
+    </ul>
+
+    <h3>4.6 &nbsp;The mechanic that actually creates loyalty</h3>
+    <p>It is not streaks and it is not badges. It is this: <strong>the app tells you something true that you did not know, at a moment when you can still act on it.</strong></p>
+    <p>Rule 7 is the purest example — a small, specific, faintly embarrassing revelation that makes it obvious the app is paying attention on your behalf. One of those per season buys a year of loyalty. Chase more moments of that kind; do not chase daily opens.</p>
+  </div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="production">
+  <div class="sec-head"><span class="sec-num">§5</span><h2>Production workflow</h2></div>
+
+  <div class="col">
+    <h3>5.1 &nbsp;Repo, environments, CI</h3>
+    <ul>
+      <li>Single Next.js repo — <code>FantasyGuru</code> is already initialised and empty.</li>
+      <li><code>main</code> deploys to production. Feature branches get a Vercel preview plus a matching Neon database branch.</li>
+      <li>TypeScript strict, ESLint, Prettier, enforced through lint-staged and husky so CI never has to argue about formatting.</li>
+      <li>GitHub Actions on every PR: typecheck, lint, test, build.</li>
+      <li>Drizzle Kit migrations, committed and applied on deploy. <strong>Additive only between September and January</strong> — no destructive migrations during the season.</li>
+    </ul>
+
+    <div class="flag ok">
+      <p class="flag-label">The only tests that matter in v1</p>
+      <p>The alarm rule engine, tested against fixture JSON captured from real Sleeper responses — every rule gets one fixture where it must fire and one where it must not. Not the UI. This is the only part of the app where a bug is publicly humiliating, and fixtures are also how you keep working through the offseason when live data is meaningless. Capture a set of real league payloads into <code>/fixtures</code> in week one, before you need them.</p>
+    </div>
+
+    <h3>5.2 &nbsp;Observability</h3>
+    <ul>
+      <li><strong>Sentry</strong> for exceptions.</li>
+      <li>A <code>sync_log</code> table — league, timestamp, duration, outcome. When Sleeper changes something you find out in minutes rather than on a Sunday.</li>
+      <li><strong>A synthetic canary:</strong> one known public Sleeper league, synced every 15 minutes, asserted on shape. If a field name changes upstream this fires before a single user notices.</li>
+      <li>Alert on: sync failure rate above 5%; the alarm job not completed by 09:15 ET Sunday; Sleeper p95 latency above 2s.</li>
+    </ul>
+
+    <h3>5.3 &nbsp;Notifications on Android</h3>
+    <p>Android-first removes the hardest delivery problem in the original spec. There is no add-to-home-screen requirement, no Safari-tab caveat, no install-rate contingency. <code>expo-notifications</code> delivers through FCM straight to the lock screen, which is exactly where "your lineup is broken and kickoff is in two hours" belongs.</p>
+    <ul>
+      <li><strong>Android 13 and up require a runtime permission</strong> (<code>POST_NOTIFICATIONS</code>). It is a real prompt the user can decline, and once declined it is painful to recover. So <strong>earn it before you ask</strong> — show your own pre-prompt only after the user has seen their leagues on screen, explaining that they will hear from you rarely and only when something is actually broken. Never request it on first launch.</li>
+      <li><strong>Use notification channels deliberately.</strong> One channel for critical lineup alarms, a separate one for everything else, so a user can mute the noise without muting the alarm. Android surfaces these in system settings whether you design them or not.</li>
+      <li><strong>Email as the floor.</strong> Collect the address in the same interaction where you offer notifications. It survives a declined permission, a reinstall, and a new phone.</li>
+    </ul>
+    <p>When iOS arrives later it inherits this design unchanged — the phased-channel complexity that dominated rev 2 simply disappears.</p>
+
+    <h3>5.4 &nbsp;The release calendar is not normal</h3>
+    <div class="flag crit">
+      <p class="flag-label">Never deploy Saturday or Sunday</p>
+      <p>Eighty percent of the value this app delivers is concentrated in one four-hour window per week. A bad deploy at 10am Sunday is not a rollback — the moment passes and does not return for seven days. Deploy Monday night through Thursday, treat Thursday as the last safe day, and feature-flag anything that touches the alarm path.</p>
+    </div>
+
+    <h4>Pre-season checklist — before Sept 9</h4>
+    <ol>
+      <li>Bye-week table entered and verified twice, from two different sources.</li>
+      <li>Rate limiter proven against a simulated 500-user sweep.</li>
+      <li>Alarm job dry-run every preseason Sunday, delivering to you alone.</li>
+      <li>Rule 7 tuned against your own real leagues until it stops crying wolf.</li>
+      <li>Home-screen install flow tested on a physical iPhone, not a simulator.</li>
+      <li>A notifications kill switch that works without a deploy.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="risks">
+  <div class="sec-head"><span class="sec-num">§6</span><h2>Risks and open questions</h2></div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>Momentum loss — a soft deadline stops being a deadline</td><td><span class="chip crit">Critical</span></td><td>The largest risk now that Sept 9 is released. Pick a real date — Week 6, Sunday 18 October — and treat the Play closed-test start as the commitment that makes it real. A project with no date does not ship midseason, it ships next year.</td></tr>
+        <tr><td>Sleeper changes or restricts the API</td><td><span class="chip crit">Critical</span></td><td>The canary in §5.2. There is no contract here and no notice period — the API is public, undocumented in parts, and owes you nothing.</td></tr>
+        <tr><td>Twelve testers drift out mid-window and reset the 14-day clock</td><td><span class="chip warn">Warning</span></td><td>Recruit fifteen, not twelve. Testers who opt out before the period ends stop counting, and a silent reset in week two costs a fortnight.</td></tr>
+        <tr><td>Notification permission declined on Android 13+</td><td><span class="chip warn">Warning</span></td><td>Own pre-prompt first, system prompt second, and only after the user has seen value. A decline is expensive to recover from, and a first-launch prompt earns plenty of them.</td></tr>
+        <tr><td>Midseason arrival — a user lands in Week 6 with five weeks of history</td><td><span class="chip info">Known</span></td><td>Design for it rather than around it: the first run shows the current week immediately and treats past weeks as optional depth.</td></tr>
+        <tr><td>Rate limit / IP block on a Sunday</td><td><span class="chip warn">Warning</span></td><td>Per-league cache, concurrency limiter, and a ten-minute spread window. Non-negotiable on day one.</td></tr>
+        <tr><td>Rule 7 false positives train users to ignore alerts</td><td><span class="chip warn">Warning</span></td><td>Suppression clause in §3, then tuning against real leagues through preseason.</td></tr>
+        <tr><td>Redraft seasonality — seven dead months</td><td><span class="chip info">Known</span></td><td>Accepted for v1. Adding dynasty is what eventually makes this a year-round product; that is a v2 conversation, not a launch blocker.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col">
+    <h4>Settled</h4>
+    <h4>Settled</h4>
+    <ul>
+      <li><strong>Platform</strong> — Android only for v1. iOS is shaped by what Android users report.</li>
+      <li><strong>Timing</strong> — Sept 9 released. Targeting Week 5–6, mid-October.</li>
+      <li><strong>Client</strong> — Expo + Expo Router, one codebase.</li>
+      <li><strong>Scheduler</strong> — external (QStash), not platform cron.</li>
+      <li><strong>Name</strong> — FantasyGuru.</li>
+      <li><strong>Devices</strong> — physical Android and iPhone available for testing.</li>
+    </ul>
+
+    <h4>Still open</h4>
+    <ul>
+      <li><strong>Who are your fifteen testers, by name?</strong> The Play clock does not start until twelve are opted in, which makes this the longest-lead item left in the project.</li>
+      <li><strong>Does a Sleeper deep link exist?</strong> Still unverified — see §4.2. An hour of testing settles it, and the answer reshapes the alarm.</li>
+      <li><strong>Keep the web build?</strong> Expo gives it nearly free, and "type your username, see your leagues" is a far better first-run funnel on web than behind a Play Store install. Worth keeping as the front door even with Android as the product.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="plan">
+  <div class="sec-head"><span class="sec-num">§7</span><h2>Build order</h2></div>
+
+  <div class="col">
+    <p class="lede">Ordered so that the app is shippable at the end of every single day. If you run out of time on day 12, what exists on day 11 still works and is still worth using. Days 1–11 are backend and logic and are identical whether the client is web or native — the platform choice only bites from day 12.</p>
+  </div>
+
+  <div class="sprint wide">
+    <div class="day"><span class="day-when">Today · Day 0</span><span class="day-what"><b>Start the clock you don't control</b><span>Create the Google Play Console account and reserve the app name. Line up fifteen testers — you need twelve to stay opted in, and some will drift. Optionally start Apple enrollment too; it costs nothing to have it waiting.</span></span></div>
+    <div class="day"><span class="day-when">Day 1–2</span><span class="day-what"><b>Skeleton and player sync</b><span>Backend service + Drizzle + Neon. Loop A running on a schedule. The <code>players</code> table populated and refreshing. Nothing user-facing yet.</span></span></div>
+    <div class="day"><span class="day-when">Day 3–4</span><span class="day-what"><b>Sleeper adapter and league sync</b><span>Loop B with the per-league cache and the concurrency limiter. Typed clients for all five endpoints. Capture fixtures while you're in here.</span></span></div>
+    <div class="day"><span class="day-when">Day 5–6</span><span class="day-what"><b>Expo app: username → dashboard</b><span>Expo Router + NativeWind scaffold, running on web and in a simulator from the start. The ten-second path, roughly styled. <strong>This is the first genuinely shippable state</strong> — and the day you start the Play closed test, however unfinished it looks.</span></span></div>
+    <div class="day"><span class="day-when">Day 7</span><span class="day-what"><b>Bye-week table + shared-player view</b><span>Enter and double-verify all 32 rows. Build the cross-league player list that rule 7 will later read from.</span></span></div>
+    <div class="day"><span class="day-when">Day 8–9</span><span class="day-what"><b>Rule engine, rules 1–3</b><span>Fixture-tested. Surfaced on the dashboard as the verdict. Still no notifications — the alarm exists as a screen first.</span></span></div>
+    <div class="day"><span class="day-when">Day 10–11</span><span class="day-what"><b>Accounts, email, scheduler</b><span>Minimal auth, timezone capture, <code>alarms_sent</code>, and the scheduled job wired to Resend. Dry-run to yourself only.</span></span></div>
+    <div class="day"><span class="day-when">Day 12–13</span><span class="day-what"><b>Visual design pass</b><span>The verdict states, deep links out to Sleeper, dark theme, and a layout that holds from a phone to a desktop browser. This is where it stops looking like a side project.</span></span></div>
+    <div class="day"><span class="day-when">Day 14</span><span class="day-what"><b>Android push + permission flow</b><span>FCM through <code>expo-notifications</code>, notification channels, and the pre-prompt that earns the Android 13+ runtime permission. Test on the physical device, not the emulator.</span></span></div>
+    <div class="day"><span class="day-when">Day 15</span><span class="day-what"><b>Observability and load</b><span>Sentry, <code>sync_log</code>, the canary, and a simulated 500-user sweep against the rate limiter.</span></span></div>
+    <div class="day"><span class="day-when">Day 16</span><span class="day-what"><b>Rules 4–7 if the time exists</b><span>Rule 7 last, and only with the suppression clause. If it isn't tuned, ship without it — a missing feature costs nothing, a noisy one costs users.</span></span></div>
+    <div class="day"><span class="day-when">Day 17</span><span class="day-what"><b>Feature freeze</b><span>Run the checklist in §5.4. From here the build only gets bug fixes; the closed test should already be running against it.</span></span></div>
+    <div class="day"><span class="day-when">Days 18–31</span><span class="day-what"><b>The 14-day closed test</b><span>Twelve testers opted in continuously. This is not dead time — it is your only pre-launch window with real users on real leagues, and it is when rule 7 gets tuned. Apply for production access the moment the fourteen days clear.</span></span></div>
+    <div class="day"><span class="day-when">~Sun 18 Oct · Week 6</span><span class="day-what"><b>Launch</b><span>Four teams on bye. The alarm has something to say on day one, which is the whole reason for launching here rather than in Week 1.</span></span></div>
+    <div class="day"><span class="day-when">Weeks 7–14</span><span class="day-what"><b>Byes every week but 12</b><span>The product's loudest stretch, and eight weeks of real usage before the season ends. That feedback is what shapes the iOS build.</span></span></div>
+  </div>
+
+  <div class="col" style="margin-top:34px">
+    <div class="flag">
+      <p class="flag-label">If you fall behind</p>
+      <p>Cut in this order: rule 7, then rules 4–6, then web push, then the live scoreboard. Do not cut the per-league cache, the rate limiter, the bye-week verification, or <code>alarms_sent</code>. Those four are what stand between a soft launch and a public failure on the one Sunday people are watching.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="wide">
+  Revision 3 · 23 August 2026 · Sleeper-only · redraft · Expo · Android first · targeting NFL Week 5–6, mid-October 2026<br>
+  Verified against <a href="https://docs.sleeper.com/">Sleeper API documentation</a> · <a href="https://support.google.com/googleplay/android-developer/answer/14151465">Google Play closed-testing requirement</a> · <a href="https://www.nfl.com/news/2026-nfl-schedule-release-every-team-bye-week">2026 NFL bye weeks</a> · <a href="https://developer.android.com/develop/ui/compose/notifications/notification-permission">Android notification runtime permission</a> · <a href="https://vercel.com/docs/cron-jobs/usage-and-pricing">Vercel cron limits</a><br>
+  Rate limits, TTLs, and the day ordering are estimates to be revised against real traffic. Sleeper deep-link support is unverified — see §4.2.
+</footer>

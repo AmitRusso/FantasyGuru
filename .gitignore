@@ -1,0 +1,6 @@
+# Seeded design-canvas output — regenerated from design/*.dc.html + canvas.json,
+# ~2MB of bundled editor payload per build. Not source.
+design/fantasyguru-v1-screens.html
+
+node_modules/
+.DS_Store

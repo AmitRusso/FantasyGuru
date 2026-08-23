@@ -1,0 +1,36 @@
+Create a design canvas for FantasyGuru — the v1 Android app.
+
+Read docs/design-brief.md first and follow it exactly. It contains the product
+description, the aesthetic thesis, the full colour/type/spacing system, the
+artboard list, and the real content for every screen. Do not substitute
+placeholder content: every player, league, score and timestamp in the brief is
+specified and internally consistent (Week 6, Sunday 18 October 2026, 10:14 AM,
+2h 46m to kickoff, four real bye teams). Use it verbatim.
+
+Artboards: 412 x 915 dp Android phone frames, drawn edge-to-edge with a 24dp
+status-bar inset at top and a 24dp gesture-nav inset at bottom. Ten artboards in
+three rows:
+
+  Row 1 - Onboarding   01 Cold open  |  02 Finding your leagues
+  Row 2 - Core loop    03 Home (calm)  |  04 Home (alarm)  |  05 League detail  |
+                       06 Players  |  07 Live
+  Row 3 - System       08 Notification  |  09 Permission pre-prompt  |
+                       10 Empty & error
+
+Design the dark theme. It is the primary and the one the app ships in.
+
+The single most important constraint, from section 2 of the brief: the interface
+is monochrome slate, and the only saturated colour anywhere on screen is status —
+red, amber, green. The interactive accent is a desaturated steel blue that reads
+as "tappable", never as "important". No colour for branding, decoration,
+emphasis, illustration, or category coding. If an element needs to stand out, use
+size, weight, or space instead.
+
+Start with artboard 03, Home in its calm state, and get it right before moving
+on. It is the screen users see most weeks and the hardest to make feel resolved
+rather than empty. Artboard 04 is the screen the whole product exists for — the
+verdict must be readable at arm's length, at a glance, without reading a word.
+
+Two things to resist: this should not look like a stock Material 3 app, and it
+should not look like a dashboard. There are no stat tiles, no charts, and no
+gamification anywhere in this product.
