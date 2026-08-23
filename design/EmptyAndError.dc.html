@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0A0E13; font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #7FA3CC; text-decoration: none; }
+    a:hover { color: #A0BFE0; }
+    .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+    .lbl { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 11px; line-height: 14px; font-weight: 700; letter-spacing: 0.09em; }
+    .h { font-family: "Archivo", "Helvetica Neue", Arial, sans-serif; font-weight: 600; font-size: 19px; line-height: 25px; letter-spacing: -0.01em; color: #E9EEF4; }
+    .b { font-size: 15px; line-height: 22px; color: #96A3B1; }
+    .btn { height: 46px; border: 1px solid #344354; border-radius: 10px; display: inline-flex; align-items: center; padding: 0 18px; }
+    .btnt { font-size: 14px; line-height: 20px; font-weight: 600; color: #7FA3CC; }
+    .sect { padding: 0 20px; display: flex; flex-direction: column; justify-content: center; }
+  </style>
+</helmet>
+
+<div style="width: 412px; height: 915px; background: #0A0E13; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 24px; flex: none;"></div>
+
+  <div class="sect" style="height: 289px; flex: none;">
+    <span class="lbl" style="color: #344354;">EMPTY · USERNAME NOT FOUND</span>
+    <div style="height: 18px;"></div>
+    <div class="h">That username isn&#39;t on Sleeper.</div>
+    <div style="height: 8px;"></div>
+    <div class="b">Usernames can change. If you renamed your account, try the new one.</div>
+    <div style="height: 20px;"></div>
+    <div><span class="btn"><span class="btnt">Try another username</span></span></div>
+  </div>
+
+  <div style="height: 1px; background: #253140; flex: none;"></div>
+
+  <div class="sect" style="height: 289px; flex: none;">
+    <span class="lbl" style="color: #344354;">EMPTY · NO LEAGUES THIS SEASON</span>
+    <div style="height: 18px;"></div>
+    <div class="h">No 2026 leagues on this account.</div>
+    <div style="height: 8px;"></div>
+    <div class="b">The username is right, but it isn&#39;t in an NFL league for 2026. Join one in Sleeper and come back.</div>
+    <div style="height: 20px;"></div>
+    <div><span class="btn"><span class="btnt">Open Sleeper</span></span></div>
+  </div>
+
+  <div style="height: 1px; background: #253140; flex: none;"></div>
+
+  <div class="sect" style="height: 289px; flex: none;">
+    <span class="lbl" style="color: #344354;">ERROR · SLEEPER UNREACHABLE</span>
+    <div style="height: 18px;"></div>
+    <div class="h">Sleeper isn&#39;t responding.</div>
+    <div style="height: 8px;"></div>
+    <div class="b">This is Sleeper&#39;s end, not yours. Nothing you are seeing is wrong — it is just older than it should be.</div>
+    <div style="height: 16px;"></div>
+    <div style="display: flex; align-items: center; gap: 18px;">
+      <span class="lbl tnum" style="color: #64717E;">LAST CHECK 9:00 AM</span>
+      <span class="lbl tnum" style="color: #64717E;">RETRYING IN 30S</span>
+    </div>
+    <div style="height: 18px;"></div>
+    <div><span class="btn"><span class="btnt">Retry now</span></span></div>
+  </div>
+
+  <div style="height: 24px; flex: none;"></div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

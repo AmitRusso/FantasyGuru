@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0A0E13; font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #7FA3CC; text-decoration: none; }
+    a:hover { color: #A0BFE0; }
+    .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+    .pname { font-size: 15px; line-height: 19px; font-weight: 600; color: #E9EEF4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pmeta { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 11px; line-height: 15px; font-weight: 500; letter-spacing: 0.06em; color: #64717E; }
+    .cnt { font-family: "Archivo", "Helvetica Neue", Arial, sans-serif; font-weight: 600; font-size: 17px; line-height: 20px; color: #E9EEF4; margin-left: 10px; font-variant-numeric: tabular-nums; flex: none; }
+    .lbl { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: 11px; line-height: 14px; font-weight: 700; letter-spacing: 0.09em; }
+  </style>
+</helmet>
+
+<div style="width: 412px; height: 915px; background: #0A0E13; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 24px; flex: none;"></div>
+
+  <div style="height: 60px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 20px;">
+    <div style="font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: 24px; line-height: 30px; letter-spacing: -0.015em; color: #E9EEF4;">Players</div>
+    <div style="width: 40px; height: 40px; margin-right: -8px; display: flex; align-items: center; justify-content: center;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#96A3B1" stroke-width="1.8" stroke-linecap="round"><circle cx="10.6" cy="10.6" r="6.6"></circle><path d="M15.4 15.4 20.5 20.5"></path></svg>
+    </div>
+  </div>
+
+  <div style="height: 42px; flex: none; display: flex; align-items: stretch; gap: 20px; padding: 0 20px; border-bottom: 1px solid #253140;">
+    <div style="display: flex; align-items: center; border-bottom: 2px solid #7FA3CC; margin-bottom: -1px;">
+      <span class="lbl" style="color: #7FA3CC;">ALL</span>
+    </div>
+    <div style="display: flex; align-items: center;">
+      <span class="lbl" style="color: #64717E;">STARTED</span>
+    </div>
+    <div style="display: flex; align-items: center;">
+      <span class="lbl" style="color: #64717E;">BENCHED</span>
+    </div>
+    <div style="display: flex; align-items: center;">
+      <span class="lbl" style="color: #64717E;">ON BYE</span>
+    </div>
+  </div>
+
+  <div style="flex: 1; display: flex; flex-direction: column; padding: 0 20px; overflow: hidden;">
+
+    <div style="height: 18px; flex: none;"></div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 2px; flex: none;">
+      <span class="lbl" style="color: #64717E;">OWNED ACROSS 4 LEAGUES</span>
+      <span class="lbl" style="color: #344354;">STARTED</span>
+    </div>
+
+    <div style="height: 10px; flex: none;"></div>
+
+    <div style="background: #121922; border: 1px solid #253140; border-radius: 12px; overflow: hidden; flex: none;">
+
+      <div style="display: flex; align-items: center; height: 66px; padding-right: 16px; border-bottom: 1px solid #253140;">
+        <div style="width: 3px; height: 40px; background: #6B4744; border-radius: 2px; flex: none;"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 14px;">
+          <div class="pname">Bijan Robinson</div>
+          <div class="pmeta">RB · ATL · 3 LEAGUES</div>
+        </div>
+        <div class="cnt">3 / 3</div>
+      </div>
+
+      <div style="display: flex; align-items: center; height: 66px; padding-right: 16px; border-bottom: 1px solid #253140;">
+        <div style="width: 3px; height: 40px; background: #4C5C88; border-radius: 2px; flex: none;"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 14px;">
+          <div class="pname">Puka Nacua</div>
+          <div class="pmeta">WR · LAR · 2 LEAGUES</div>
+        </div>
+        <div class="cnt">2 / 2</div>
+      </div>
+
+      <div style="border-bottom: 1px solid #253140;">
+        <div style="display: flex; align-items: center; height: 66px; padding-right: 16px; background: #2E1512;">
+          <div style="width: 3px; height: 40px; background: #3F6A8C; border-radius: 2px; flex: none;"></div>
+          <div style="flex: 1; min-width: 0; padding-left: 14px;">
+            <div class="pname">Jahmyr Gibbs</div>
+            <div class="pmeta" style="color: #96A3B1;">RB · DET · 2 LEAGUES</div>
+          </div>
+          <span class="lbl" style="color: #FF6F5E; background: #45201B; border-radius: 6px; padding: 3px 8px; margin-left: 10px; flex: none;">BYE</span>
+          <div class="cnt">1 / 2</div>
+        </div>
+        <div style="background: #0A0E13; padding: 10px 16px 12px 34px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 22px;">
+            <span class="lbl" style="color: #96A3B1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">DYNASTY DEGENERATES</span>
+            <span class="lbl" style="color: #FF6F5E; flex: none; margin-left: 12px;">STARTING · RB2</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 22px;">
+            <span class="lbl" style="color: #96A3B1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">SUNDAY SCARIES</span>
+            <span class="lbl" style="color: #64717E; flex: none; margin-left: 12px;">BENCH</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; height: 66px; padding-right: 16px; border-bottom: 1px solid #253140;">
+        <div style="width: 3px; height: 40px; background: #6E4750; border-radius: 2px; flex: none;"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 14px;">
+          <div class="pname">Trey McBride</div>
+          <div class="pmeta">TE · ARI · 2 LEAGUES</div>
+        </div>
+        <div class="cnt">1 / 2</div>
+      </div>
+
+      <div style="display: flex; align-items: center; height: 66px; padding-right: 16px; border-bottom: 1px solid #253140;">
+        <div style="width: 3px; height: 40px; background: #35604F; border-radius: 2px; flex: none;"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 14px;">
+          <div class="pname">Jalen Hurts</div>
+          <div class="pmeta">QB · PHI · 1 LEAGUE</div>
+        </div>
+        <div class="cnt">1 / 1</div>
+      </div>
+
+      <div style="display: flex; align-items: center; height: 66px; padding-right: 16px; border-bottom: 1px solid #253140;">
+        <div style="width: 3px; height: 40px; background: #35635C; border-radius: 2px; flex: none;"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 14px;">
+          <div class="pname">Jaxon Smith-Njigba</div>
+          <div class="pmeta">WR · SEA · 2 LEAGUES</div>
+        </div>
+        <div class="cnt">2 / 2</div>
+      </div>
+
+      <div style="display: flex; align-items: center; height: 66px; padding-right: 16px; border-bottom: 1px solid #253140;">
+        <div style="width: 3px; height: 40px; background: #3C5468; border-radius: 2px; flex: none;"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 14px;">
+          <div class="pname">Nico Collins</div>
+          <div class="pmeta">WR · HOU · 1 LEAGUE</div>
+        </div>
+        <div class="cnt">1 / 1</div>
+      </div>
+
+      <div style="display: flex; align-items: center; height: 66px; padding-right: 16px;">
+        <div style="width: 3px; height: 40px; background: #85572F; border-radius: 2px; flex: none;"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 14px;">
+          <div class="pname">Broncos</div>
+          <div class="pmeta">DEF · DEN · 2 LEAGUES</div>
+        </div>
+        <div class="cnt">2 / 2</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div style="flex: none; background: #0A0E13; border-top: 1px solid #253140;">
+    <div style="height: 56px; display: flex; align-items: stretch;">
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#64717E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 10.4 12 3.8l8.4 6.6V20a.9.9 0 0 1-.9.9H4.5a.9.9 0 0 1-.9-.9z"></path></svg>
+        <span style="font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 10px; line-height: 12px; font-weight: 700; letter-spacing: 0.09em; color: #64717E;">HOME</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#7FA3CC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.6" width="3.6" height="3.6" rx="1"></rect><path d="M10 6.4h11"></path><rect x="3" y="10.2" width="3.6" height="3.6" rx="1"></rect><path d="M10 12h11"></path><rect x="3" y="15.8" width="3.6" height="3.6" rx="1"></rect><path d="M10 17.6h11"></path></svg>
+        <span style="font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 10px; line-height: 12px; font-weight: 700; letter-spacing: 0.09em; color: #7FA3CC;">PLAYERS</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#64717E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="2.5,12 7,12 9.6,6 14,18 16.4,12 21.5,12"></polyline></svg>
+        <span style="font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace; font-size: 10px; line-height: 12px; font-weight: 700; letter-spacing: 0.09em; color: #64717E;">LIVE</span>
+      </div>
+    </div>
+    <div style="height: 24px;"></div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
