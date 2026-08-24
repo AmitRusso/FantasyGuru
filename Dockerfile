@@ -25,7 +25,12 @@ RUN corepack enable && corepack prepare pnpm@11.23.0 --activate
 COPY --from=build /repo /repo
 # Drop devDependencies. --ignore-scripts because nothing in the production tree needs a
 # postinstall, and running one in the deployed image is how supply-chain surprises land.
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+#
+# CI=true: this step removes node_modules and reinstalls prod-only, and pnpm asks for
+# interactive confirmation before doing that (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY) --
+# a Docker RUN step has no TTY to confirm with. Same class of bug as the build stage's
+# ERR_PNPM_IGNORED_BUILDS: pnpm's non-interactive-shell detection, not a CI-only code path.
+RUN CI=true pnpm install --frozen-lockfile --prod --ignore-scripts
 
 EXPOSE 8080
 
