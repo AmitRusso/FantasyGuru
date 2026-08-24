@@ -1,6 +1,11 @@
 node_modules
 **/node_modules
 **/dist
+# Local incremental-build state. Docker's context is filesystem-, not git-, aware, so a
+# stale tsbuildinfo on disk (gitignored, but still a real file) travels into the image even
+# though **/dist above is excluded -- tsc then believes the (missing) dist is already
+# up to date and emits nothing, and the runtime image ends up with no dist/index.js at all.
+**/*.tsbuildinfo
 .git
 .github
 design
