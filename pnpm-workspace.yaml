@@ -1,0 +1,16 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+allowBuilds:
+  esbuild: set this to true or false
+
+# Build scripts are opt-in. esbuild backs vitest; pglite backs the db tests.
+onlyBuiltDependencies:
+  - esbuild
+  - '@electric-sql/pglite'
+
+# pnpm re-runs `pnpm install` before exec/run. In shells where pnpm is only reachable through
+# corepack that check fails before the real command runs. Contributors with pnpm on PATH are
+# unaffected either way.
+verifyDepsBeforeRun: false

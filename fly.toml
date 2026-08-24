@@ -1,0 +1,39 @@
+# FantasyGuru API -- spec §1, backend row: "Standalone API - Fly.io or Railway".
+# Vercel hosts the Expo web export from Stage 3; it does not host this.
+
+app = "fantasyguru-api"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+  HOST = "0.0.0.0"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_start_machines = true
+
+  # Never scale to zero. Spec §4.5: "the dashboard should be painted before a spinner would
+  # have had cause to appear" -- and a cold start on the 10:00 ET Sunday path is the one
+  # latency this app cannot spend.
+  auto_stop_machines = false
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    method = "GET"
+    path = "/health"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+
+  # 512MB, not the 256MB default. Measured 24 Aug 2026: GET /v1/players/nfl is 14.6MB
+  # covering 12,222 players -- roughly 3x the spec's "~5MB and 11k players" estimate -- and
+  # fetch + JSON.parse peaks around 98MB RSS. 256MB would be uncomfortably close.
+  memory = "512mb"

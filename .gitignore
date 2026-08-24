@@ -4,3 +4,10 @@ design/fantasyguru-v1-screens.html
 
 node_modules/
 .DS_Store
+
+# --- Stage 1 ---
+dist/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

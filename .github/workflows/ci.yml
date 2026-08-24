@@ -1,0 +1,133 @@
+name: CI
+
+# Spec §5.1: typecheck, lint, test, build on every PR.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: typecheck · lint · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.23.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
+      # The rule-engine fixtures of spec §5.1 arrive in Stage 5. Today this is the lenient
+      # Sleeper normaliser and the batched upsert, the latter against real Postgres via
+      # PGlite -- no service container needed.
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  migration:
+    name: migration applies to a fresh Neon branch
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      # Spec §5.1: "Feature branches get a Vercel preview plus a matching Neon database
+      # branch." The Vercel half arrives in Stage 3, with an app to preview.
+      #
+      # This job is a no-op until the Neon secrets exist, so the repo is green from the first
+      # commit rather than red until someone wires an account up.
+      - name: Check whether Neon is configured
+        id: guard
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+        run: |
+          if [ -n "$NEON_API_KEY" ] && [ -n "$NEON_PROJECT_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Neon secrets not set; skipping the per-PR database branch."
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: steps.guard.outputs.configured == 'true'
+        with:
+          version: 11.23.0
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.configured == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: steps.guard.outputs.configured == 'true'
+
+      - name: Create Neon branch
+        id: branch
+        if: steps.guard.outputs.configured == 'true'
+        uses: neondatabase/create-branch-action@v5
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          branch_name: pr-${{ github.event.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      # Every PR proves its own migration before merge. Spec §5.1 forbids destructive
+      # migrations between September and January, so this is the gate that catches one.
+      - name: Apply migrations
+        if: steps.guard.outputs.configured == 'true'
+        env:
+          DATABASE_URL: ${{ steps.branch.outputs.db_url_with_pooler }}
+        run: pnpm db:migrate
+
+  deploy:
+    name: deploy to Fly
+    runs-on: ubuntu-latest
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      # Spec §5.4: never deploy Saturday or Sunday. Eighty percent of the value lands in one
+      # four-hour window per week, and a bad deploy at 10:00 Sunday is not a rollback -- the
+      # moment passes and does not return for seven days.
+      #
+      # This blocks the automated path only. A human who has decided a weekend hotfix is
+      # worth it can still run `fly deploy` locally, which is the right amount of friction.
+      - name: Refuse to deploy at the weekend
+        run: |
+          DAY=$(TZ=America/New_York date +%u)
+          if [ "$DAY" -ge 6 ]; then
+            echo "::error::It is the weekend in ET. See spec §5.4 - deploy Monday to Thursday."
+            exit 1
+          fi
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
