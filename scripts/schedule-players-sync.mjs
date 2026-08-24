@@ -10,15 +10,22 @@
  * ---------------------------------------------------------------------------------------
  * Why this script exists rather than a line in the README
  *
- * build-plan.md S1 §1.3: QStash evaluates plain cron in UTC. `0 7 * * *` is 03:00 ET during
- * EDT and 02:00 ET once the clocks go back on 1 November. For Loop A that drift is harmless.
- * For Loop C in Stage 6 it is not -- a Sunday alarm job that silently moves to 08:00 ET fires
- * an hour late into the only window the product has -- so the timezone-pinning path gets
- * proven here, on a job where being wrong costs nothing.
+ * build-plan.md S1 §1.3: QStash evaluates plain cron in UTC by default. A Sunday alarm job
+ * that silently moves an hour when EDT ends on 1 November would fire late into the only
+ * window the product has, so this Stage 1 job -- where being wrong costs nothing -- is where
+ * the timezone-pinning path gets proven.
  *
- * The QStash SDK (2.11.3) types `cron` as a plain string with no timezone field, so this
- * script ATTEMPTS the `CRON_TZ=` prefix, reads the schedule back, and reports exactly which
- * form the API accepted. Do not assume -- read the output.
+ * CONFIRMED WORKING against the live API on 24 Aug 2026: QStash accepts a `CRON_TZ=<iana>`
+ * prefix on the cron expression and stores it verbatim (read back as
+ * "CRON_TZ=America/New_York 0 3 * * *"), and computes nextScheduleTime correctly against it
+ * (verified as 07:00 UTC = 03:00 ET). Stage 6 can use the identical form for Loop C.
+ *
+ * Two API quirks discovered while writing this, neither documented in the QStash SDK's
+ * (2.11.3) types:
+ *   1. The destination path segment must be the RAW url, not percent-encoded --
+ *      encodeURIComponent(destination) is rejected with "invalid destination url: endpoint
+ *      has invalid scheme". The colon and slashes are meant to pass through literally.
+ *   2. `GET /v2/schedules` returns a bare JSON array, not an { schedules: [...] } wrapper.
  */
 
 const TOKEN = process.env.QSTASH_TOKEN;
@@ -30,8 +37,7 @@ if (!TOKEN || !BASE_URL) {
 }
 
 const DESTINATION = `${BASE_URL.replace(/\/$/, '')}/internal/jobs/players-sync`;
-const TZ_CRON = 'CRON_TZ=America/New_York 0 3 * * *';
-const UTC_CRON = '0 7 * * *'; // 03:00 ET while EDT is in effect.
+const CRON = 'CRON_TZ=America/New_York 0 3 * * *';
 
 const QSTASH = 'https://qstash.upstash.io/v2';
 
@@ -44,11 +50,13 @@ async function qstash(path, init = {}) {
   return { ok: response.ok, status: response.status, text };
 }
 
-async function createSchedule(cron) {
-  return qstash(`/schedules/${encodeURIComponent(DESTINATION)}`, {
+async function createSchedule() {
+  // NOT encodeURIComponent(DESTINATION) -- see the header comment. QStash wants the literal
+  // URL as the trailing path segment.
+  return qstash(`/schedules/${DESTINATION}`, {
     method: 'POST',
     headers: {
-      'upstash-cron': cron,
+      'upstash-cron': CRON,
       'upstash-method': 'POST',
       'content-type': 'application/json',
       // QStash retries on non-2xx. The route is idempotent and returns 200 on a
@@ -61,6 +69,7 @@ async function createSchedule(cron) {
 
 async function main() {
   console.log(`destination: ${DESTINATION}`);
+  console.log(`cron:        ${CRON}`);
 
   // Remove any existing schedule for this destination so re-running is idempotent.
   const existing = await qstash('/schedules');
@@ -73,22 +82,7 @@ async function main() {
     }
   }
 
-  let created = await createSchedule(TZ_CRON);
-  let cronUsed = TZ_CRON;
-
-  if (!created.ok) {
-    console.warn(`\nQStash rejected the timezone-pinned cron (${created.status}):`);
-    console.warn(`  ${created.text}`);
-    console.warn(`Falling back to UTC: "${UTC_CRON}".`);
-    console.warn(
-      'ACTION REQUIRED before Stage 6: this job will run at 02:00 ET after 1 Nov 2026.\n' +
-        'Harmless for Loop A. For the Sunday alarm it is not -- Stage 6 must either pin the\n' +
-        'timezone another way or register two schedules across the DST boundary.\n',
-    );
-    created = await createSchedule(UTC_CRON);
-    cronUsed = UTC_CRON;
-  }
-
+  const created = await createSchedule();
   if (!created.ok) {
     console.error(`Failed to create schedule (${created.status}): ${created.text}`);
     process.exit(1);
@@ -96,14 +90,21 @@ async function main() {
 
   const { scheduleId } = JSON.parse(created.text);
   const readBack = await qstash(`/schedules/${scheduleId}`);
+  const stored = readBack.ok ? JSON.parse(readBack.text) : null;
 
   console.log(`\ncreated schedule ${scheduleId}`);
-  console.log(`cron accepted:   ${cronUsed}`);
-  console.log(`read back as:    ${readBack.ok ? JSON.parse(readBack.text).cron : readBack.text}`);
+  console.log(`cron read back:      ${stored?.cron ?? readBack.text}`);
   console.log(
-    cronUsed === TZ_CRON
-      ? '\nTimezone pinning works. Stage 6 can use the same form for Loop C.'
-      : '\nTimezone pinning NOT available. See the warning above.',
+    `next run (UTC):      ${stored ? new Date(stored.nextScheduleTime).toISOString() : 'unknown'}`,
+  );
+  console.log(
+    `next run (ET):       ${
+      stored
+        ? new Date(stored.nextScheduleTime).toLocaleString('en-US', {
+            timeZone: 'America/New_York',
+          })
+        : 'unknown'
+    }`,
   );
 }
 

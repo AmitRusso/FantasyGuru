@@ -21,7 +21,15 @@ export async function internalRoutes(fastify: FastifyInstance): Promise<void> {
     }
   });
 
-  fastify.addHook('onRequest', async (request, reply) => {
+  /**
+   * preHandler, not onRequest: Fastify's lifecycle parses the body (which is where rawBody
+   * gets set, above) AFTER onRequest but BEFORE preHandler. Auth on onRequest ran before the
+   * body existed at all, so the QStash signature check was hashing an empty string on every
+   * real call and rejecting all of them with a body-hash mismatch -- caught by publishing a
+   * real signed request against the deployed service, not by any local test, since nothing
+   * local exercises Fastify's actual request lifecycle ordering.
+   */
+  fastify.addHook('preHandler', async (request, reply) => {
     const auth = await authenticateInternalRequest(request as AuthRequest, fastify.config);
     if (!auth.ok) {
       request.log.warn({ reason: auth.reason, path: request.url }, 'internal route rejected');
