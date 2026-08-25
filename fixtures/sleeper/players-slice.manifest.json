@@ -1,0 +1,80 @@
+[
+  {
+    "label": "healthy starter",
+    "id": "4983",
+    "name": "DJ Moore",
+    "team": "BUF",
+    "position": "WR",
+    "status": "Active",
+    "injury_status": null,
+    "practice_participation": null
+  },
+  {
+    "label": "out",
+    "id": "3159",
+    "name": "Laremy Tunsil",
+    "team": "WAS",
+    "position": "OL",
+    "status": "Active",
+    "injury_status": "Out",
+    "practice_participation": null
+  },
+  {
+    "label": "ir",
+    "id": "3526",
+    "name": "Roy Robertson-Harris",
+    "team": "NYG",
+    "position": "DE",
+    "status": "Inactive",
+    "injury_status": "IR",
+    "practice_participation": null
+  },
+  {
+    "label": "doubtful",
+    "id": "7118",
+    "name": "Danny Pinter",
+    "team": "BAL",
+    "position": "G",
+    "status": "Active",
+    "injury_status": "Doubtful",
+    "practice_participation": null
+  },
+  {
+    "label": "suspended",
+    "id": "44",
+    "name": "Ahmad Brooks",
+    "team": null,
+    "position": "LB",
+    "status": "Inactive",
+    "injury_status": "Sus",
+    "practice_participation": null
+  },
+  {
+    "label": "team defence (no full_name)",
+    "id": "HOU",
+    "name": "Houston Texans",
+    "team": "HOU",
+    "position": "DEF",
+    "injury_status": null
+  },
+  {
+    "label": "free agent (no team)",
+    "id": "184",
+    "name": "Adrian Peterson",
+    "team": null,
+    "position": "RB",
+    "status": "Active",
+    "injury_status": null,
+    "practice_participation": null
+  },
+  {
+    "label": "no position",
+    "id": "2901",
+    "name": "Malcome Kennedy",
+    "team": null,
+    "position": null,
+    "status": "Active",
+    "injury_status": null,
+    "practice_participation": null
+  }
+]

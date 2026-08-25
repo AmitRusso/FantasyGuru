@@ -1,0 +1,19 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Written by `pnpm approve-builds --all`, not hand-authored -- this is the mechanism this pnpm
+# version actually reads at install time. `onlyBuiltDependencies` alone (an earlier attempt at
+# this) only scopes which packages are ELIGIBLE for a build script; it does not itself approve
+# one, and the gap between "eligible" and "approved" is silent in a TTY (pnpm just warns,
+# exit 0) but fatal with `--frozen-lockfile` under a non-interactive shell -- which is exactly
+# what a Docker build and CI both are. Confirmed by reproducing locally with stdin redirected
+# from /dev/null. esbuild is the only package that needed this; pglite ships prebuilt and has
+# no postinstall to approve.
+allowBuilds:
+  esbuild: true
+
+# pnpm re-runs `pnpm install` before exec/run. In shells where pnpm is only reachable through
+# corepack that check fails before the real command runs. Contributors with pnpm on PATH are
+# unaffected either way.
+verifyDepsBeforeRun: false

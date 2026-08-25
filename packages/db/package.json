@@ -1,0 +1,30 @@
+{
+  "name": "@fantasyguru/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@fantasyguru/sleeper": "workspace:*",
+    "drizzle-orm": "^0.38.2",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.15",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.30.1"
+  }
+}

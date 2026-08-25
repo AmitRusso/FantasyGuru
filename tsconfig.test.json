@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "incremental": false,
+    "types": ["node"]
+  },
+  "include": [
+    "packages/*/test/**/*.ts",
+    "apps/*/test/**/*.ts",
+    "eslint.config.js",
+    "vitest.config.ts",
+    "packages/db/drizzle.config.ts"
+  ]
+}

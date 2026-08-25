@@ -1,0 +1,7 @@
+# pnpm may only be reachable through corepack (e.g. on Windows without an elevated shell,
+# where `corepack enable` cannot write its shims).
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm exec lint-staged
+else
+  corepack pnpm exec lint-staged
+fi
