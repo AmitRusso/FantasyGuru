@@ -684,6 +684,288 @@ built, tested and deployed without it.
 
 ---
 
-## Stages 3–11
+# Stage 3 — Expo app: username → dashboard
+
+> **Spec:** §2.1 (onboarding), §1.3 (the store gates), §4.5 (visual direction), §6 (keep the
+> web build?), §7 Day 5–6 · **Design brief:** §3 (platform), §4 (design system), §5 artboards
+> 01–03, §8 (anti-goals)
+> **Goal:** type a Sleeper username, see your leagues — on a real Android device, on the web,
+> and against the deployed API from Stage 2.
+> **No rule engine. No verdict. No notifications.**
+
+## 3.1 This stage is a gate, and that changes how it should be worked
+
+Every prior stage could be improved indefinitely before merging. This one cannot, because it
+starts a clock that **cannot be restarted**: Google Play's closed-testing requirement is 12
+testers opted in **continuously for 14 days** (§1.3), and a tester drifting out mid-window
+resets it. §7 is blunt about the consequence — "This is the first genuinely shippable state —
+and the day you start the Play closed test, however unfinished it looks."
+
+The non-obvious part, and the thing that should drive the work order: **the 14-day clock
+counts testers being opted in, not builds being final.** New builds can be pushed to the
+track throughout without restarting anything. So the correct order is not "build the good
+version, then submit" — it is:
+
+1. Get _any_ build that launches and does not crash onto the closed track.
+2. Get 12+ testers opted in. **The clock starts here and nothing else moves it.**
+3. Keep improving the app against a running clock.
+
+Doing step 3 before step 2 spends the scarcest resource in the project — calendar days
+against an 18 October launch — on work that could have happened in parallel.
+
+### The arithmetic, from today
+
+|                                         |                                |
+| --------------------------------------- | ------------------------------ |
+| Today                                   | Tue 25 Aug 2026                |
+| Stage 3 build onto the track            | ~27 Aug                        |
+| 12 testers opted in → **clock starts**  | ~28 Aug                        |
+| 14 continuous days clear                | ~11 Sep                        |
+| Production access review (up to 7 days) | ~18 Sep                        |
+| Launch target (§7)                      | **18 Oct — ~30 days of slack** |
+
+Comfortable, and it stays comfortable only if step 2 is not deferred.
+
+**One question that could delete this entire gate:** the 12-tester/14-day rule applies to
+**personal** Play Console accounts created **after 13 November 2023**. An older personal
+account, or an organisation account, is not subject to it at all. If your account predates
+that date, Stage 3 stops being a gate and becomes an ordinary stage. Worth five minutes to
+check before pacing the next three weeks around it.
+
+## 3.2 Decisions
+
+### Decision 1 — pnpm + Metro is the real technical risk here; decide the fallback before hitting it
+
+build-plan §1 already flagged Metro `watchFolders` as "the cost, paid in Stage 3." Having now
+built two stages on this workspace, the risk is sharper than that: this repo sets
+`hoist=false` in `.npmrc` deliberately (Stage 1, to keep `packages/rules` dependency-free),
+and pnpm's strict symlinked `node_modules` is historically the exact layout Metro handles
+worst.
+
+The intended configuration is the documented one — `watchFolders` pointing at the workspace
+root, `nodeModulesPaths` covering both the app and root, and `disableHierarchicalLookup`.
+**The fallback, if that fights back, is `node-linker=hoisted` scoped to `apps/mobile`.** That
+trades some of the strictness Stage 1 chose for a layout Metro is known to handle, and it is
+a far better outcome than losing a day of a two-day gate stage to bundler archaeology. Decide
+this on the clock, not in the moment.
+
+### Decision 2 — a `packages/contracts` package, because the app must never import `pg`
+
+The obvious way to share the API's response type with the app is to import it from
+`packages/db` or `packages/sleeper`. Both are traps: `packages/db` depends on `pg` and
+`packages/sleeper` now depends on `@upstash/redis`, and Metro would try to bundle a Postgres
+driver into an Android app.
+
+So Stage 3 adds a fourth package: **`packages/contracts` — types only, zero runtime
+dependencies, zero imports.** It holds the response shape of
+`GET /v1/users/{username}/leagues`. `apps/api` imports it to type what it returns;
+`apps/mobile` imports it to type what it receives. That is what stops the client and server
+drifting, which is the whole reason build-plan §1 chose a workspace over two repos.
+
+Same discipline as `packages/rules`: an ESLint rule already forbids imports inside
+`packages/rules`, and the same guard extends to `contracts`.
+
+### Decision 3 — land the design tokens now, the components later
+
+Stage 7 is the visual design pass; Stage 3 is "roughly styled" (§7). But _roughly styled_ is
+not the same as _unstyled_, and the difference matters for rework: the brief's palette
+(§4.1), type scale (§4.3) and spacing are a fixed system, and encoding them in
+`tailwind.config.js` on day one costs an hour and means Stage 7 is a refinement rather than a
+retrofit.
+
+What Stage 3 does **not** do is build the component library, the verdict block, or any of
+artboards 04–10.
+
+One token decision that is load-bearing rather than cosmetic, from brief §2: **the interface
+is monochrome slate, and the only saturated colour is status.** If Stage 3 uses the accent
+blue for emphasis anywhere, or introduces any colour outside the palette, it teaches a
+vocabulary the alarm then has to un-teach. Getting this right early is cheaper than fixing it
+after four screens exist.
+
+### Decision 4 — plain `fetch`, not a data-fetching library
+
+Stage 3 consumes exactly one endpoint (Stage 2 §2.6 was designed so). A caching/retry library
+earns its place at three or more queries with refetch-on-focus and pull-to-refresh — that is
+Stage 5's problem, when the verdict needs revalidating on a Sunday morning. Adding it now is
+a dependency and a set of conventions bought before there is anything to spend them on.
+
+Revisit at Stage 5. Do not revisit at hour six of Stage 3.
+
+### Decision 5 — persist the `user_id`, and treat the username as disposable
+
+Spec §2.1's data-model gotcha applies to the client exactly as it applies to the database:
+**Sleeper usernames are mutable.** The app stores the `sleeperUserId` returned by the API as
+the identity and the username only for display. A returning user is resolved by id.
+
+Storage is `AsyncStorage`, not `expo-secure-store` — none of this is a secret, and
+`SecureStore` on Android has size and reliability characteristics that are not worth paying
+for a public user id.
+
+### Decision 6 — pin Tailwind to 3.x
+
+Current published versions, checked 25 Aug 2026: Expo **57.0.16**, React Native **0.87.0**,
+React **19.2.8**, NativeWind **4.2.6**, Tailwind **4.3.3**.
+
+NativeWind 4.2.6 declares its peer as `tailwindcss: ">3.3.0"`, which _permits_ Tailwind 4 —
+but NativeWind 4 is built around Tailwind 3's JS config and plugin model, and Tailwind 4
+moved to a CSS-first config that removes exactly that surface. **A permissive peer range is
+not a compatibility statement.** Pin `tailwindcss@3.4.19` (latest 3.x) and do not let
+`pnpm add tailwindcss` quietly resolve 4.x.
+
+Related: for anything Expo manages, use `npx expo install <pkg>` rather than `pnpm add`, so
+versions resolve against the SDK's matrix instead of npm's `latest`.
+
+## 3.3 Screens — three of the ten artboards
+
+| #   | Artboard                 | Stage 3 scope                                                                                                                                                                        |
+| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 01  | **Cold open**            | Built. One input, one sentence of value proposition. Brief §5: "This screen's entire purpose is to look like it will take ten seconds — because it does."                            |
+| 02  | **Finding your leagues** | Built, and **not** as a spinner. Brief §5 asks for named progress: "Found 4 leagues → Loading rosters." Brief §2: "Where loading is unavoidable, show real progress, not a shimmer." |
+| 03  | **Home**                 | Built **rough**: the league list only. The verdict block at the top is Stage 5 — there is no rule engine yet to produce one.                                                         |
+| 10  | **Empty & error**        | Partially built — the three states in §3.4 below need real handling now, styled properly in Stage 7.                                                                                 |
+
+Artboards 04–09 are out of scope. Artboard 09 (notification pre-prompt) is **actively
+forbidden** here — see §3.12.
+
+## 3.4 The one route, and its four failure modes
+
+The app consumes `GET /v1/users/{username}/leagues` and nothing else. What matters in Stage 3
+is that every non-happy path is a designed state rather than a crash:
+
+| Condition                           | API                | What the user sees                                                                      |
+| ----------------------------------- | ------------------ | --------------------------------------------------------------------------------------- |
+| Unknown username                    | `404`              | "We couldn't find that username" + the input, still filled in                           |
+| Loop A has never run                | `503`              | "Warming up — try again in a moment"                                                    |
+| Sleeper or our API unreachable      | network error      | "Can't reach Sleeper right now" + retry                                                 |
+| Real user, zero leagues this season | `200`, empty array | "No 2026 leagues on this account yet" — **not** an error, and not an empty white screen |
+
+That last row is not hypothetical: it is the normal state for a real person who has not yet
+joined a league for the season, and brief §5 artboard 10 calls it out explicitly.
+
+## 3.5 The ten-second promise, against measured numbers
+
+Spec §2.1 promises the dashboard "under ten seconds." Stage 2 measured the API half against a
+real account with 18 leagues: **5.1s cold, 2.1s warm.** A typical 3–5 league user will be
+well under a second warm.
+
+So the budget is real but not generous, and the app must not spend it carelessly: app launch,
+one round trip, render. That is the entire reason artboard 02 exists as a _designed_ screen —
+at 5 seconds cold, a blank spinner reads as broken, and named progress reads as competent.
+
+## 3.6 Android build and the closed test
+
+- **EAS Build** (`eas-cli` 22.4.0) producing an **AAB** for the Play track.
+- **`applicationId`** must match whatever is reserved in Play Console — it cannot be changed
+  after first upload without creating a different app. Locking it in this stage.
+- **A 512×512 icon is a Play submission requirement**, not a polish item. A plain
+  typographic mark is fine for Stage 3; Stage 7 can replace it.
+- **Closed testing track**, 12+ testers opted in. §6's advice stands: **recruit fifteen, not
+  twelve** — "testers who opt out before the period ends stop counting, and a silent reset in
+  week two costs a fortnight."
+
+## 3.7 Ship the web build too — and not only because it is nearly free
+
+§6 leaves this open: "Keep the web build? Expo gives it nearly free, and 'type your username,
+see your leagues' is a far better first-run funnel on web than behind a Play Store install."
+
+Recommend **yes**, for a reason §6 does not give: it is a **hedge against this stage's own
+gate**. If EAS, signing, or Play review stalls, a deployed web build still puts the real
+product in front of the fifteen testers immediately, and still proves the ten-second path
+end-to-end. It de-risks the one stage that has a deadline it cannot renegotiate.
+
+It also finally lands the other half of §5.1 — "feature branches get a Vercel preview plus a
+matching Neon database branch." Stage 1 wired the Neon half and noted the Vercel half was
+waiting for an app to preview. This is that app.
+
+## 3.8 Verify in this stage: does a Sleeper deep link exist?
+
+§4.2 is the project's oldest unanswered question, and it has been open since rev 1: "Sleeper
+does not publish a deep-link scheme, and I could not confirm that a documented `sleeper://`
+URI or universal link exists. **Test this on day one, not on day fourteen.**"
+
+Stage 3 is the first moment this is testable, because it is the first time there is an app on
+a device that can call `Linking.canOpenURL('sleeper://')`. It needs a physical Android device
+with the Sleeper app installed — so it is a task for you, not something the code can settle
+by itself.
+
+It matters because §4.2 says the answer **reshapes the alarm**: "If none does, the fallback
+is the league URL in a browser — noticeably worse, and it reshapes the alarm itself: fewer
+and higher-value alerts, because each one now costs the user more effort to act on." That is
+a Stage 5 and Stage 8 input, which is why it wants answering now rather than at Stage 7.
+
+Ship a dev-only probe screen in this stage and record the answer in this document.
+
+## 3.9 Tests — and why there are almost none
+
+Spec §5.1 is explicit and Stage 3 follows it rather than arguing: "The alarm rule engine,
+tested against fixture JSON... **Not the UI.**"
+
+So: no component tests, no snapshots, no render harness. What does get tested is the one
+piece of Stage 3 that is pure logic rather than presentation — **the API client's mapping
+from HTTP status to UI state** (the table in §3.4). Four cases, no DOM, genuinely worth
+pinning.
+
+CI gains a mobile typecheck. Because Expo's `tsconfig` does not participate in this repo's
+composite project graph, `apps/mobile` stays **out** of the `tsc --build` references and is
+checked separately with its own `tsc --noEmit` — cleaner than bending either side to fit.
+
+## 3.10 Risks
+
+| Risk                                                     | Handling                                                                               |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| pnpm's strict symlinks fight Metro                       | Decision 1: documented config first, `node-linker=hoisted` fallback decided in advance |
+| Tailwind 4 silently installed against NativeWind 4       | Decision 6: pin `3.4.19`                                                               |
+| `pg` or `@upstash/redis` pulled into the mobile bundle   | Decision 2: `packages/contracts`, types only                                           |
+| `applicationId` mismatch with the Play reservation       | Locked in §3.6 before first upload; unchangeable afterwards                            |
+| Testers drift and reset the 14-day clock                 | §6: recruit fifteen, not twelve                                                        |
+| EAS/Play stalls and the stage delivers nothing           | §3.7: the web build is the hedge                                                       |
+| Colour used for emphasis, breaking the status vocabulary | Decision 3; brief §2 is the standing rule                                              |
+| The whole gate may not even apply                        | §3.1: check the Play account's creation date first                                     |
+
+## 3.11 Definition of done
+
+1. The app runs on **web** and on a **physical Android device**.
+2. Cold open → username → leagues render, against the **deployed** Stage 2 API.
+3. All four states in §3.4 handled — including zero-leagues, which is not an error.
+4. Relaunching goes straight to the dashboard, resolved by stored `sleeperUserId`.
+5. Web build deployed to Vercel at a real URL.
+6. An AAB built by EAS and uploaded to the Play **closed-testing** track.
+7. **12+ testers opted in — the clock is running.** This is the stage's actual deliverable.
+8. CI green, including the mobile typecheck.
+9. The §4.2 deep-link question **answered**, either way, and recorded here.
+
+## 3.12 Explicitly not in Stage 3
+
+No rule engine, no verdict, nothing in `packages/rules` (Stage 5). No bye weeks (Stage 4). No
+live scoreboard. No league detail, players, or live screens (artboards 04–07). No auth, no
+email capture.
+
+And specifically: **no notification permission request, and no pre-prompt.** Spec §5.3 and
+§6 both make this a hard rule — "Never request it on first launch," and a decline is
+"painful to recover" from. Artboard 09 exists precisely so that prompt is _designed_ before
+it is _shown_, and it is shown in Stage 8, after the user has seen their leagues. A stray
+`requestPermissionsAsync()` in Stage 3 would burn the one permission this product depends on.
+
+## 3.13 What Stage 3 needs from you
+
+Ordered by how much they block:
+
+1. **Stage 0 status — still unconfirmed after three stages.** Is the Play Console account
+   created, and the app name reserved? Stage 3 cannot reach its actual deliverable (a running
+   clock) without it, and it has been the longest-lead item since the first plan.
+2. **Your Play Console account's creation date** — before or after 13 Nov 2023. Decides
+   whether the 12-tester gate applies at all (§3.1).
+3. **The reserved `applicationId`** (e.g. `com.fantasyguru.app`) — unchangeable after first
+   upload.
+4. **An Expo account**, for EAS Build.
+5. **Your fifteen testers**, by name, and their Google account emails.
+6. **A physical Android device with Sleeper installed**, for the §3.8 deep-link probe — spec
+   §6 already lists this as available.
+7. **Your Sleeper username** — still outstanding from Stage 2, still needed for real fixtures
+   and rule-7 tuning, and now also the most realistic thing to type into the app on day one.
+
+---
+
+## Stages 4–11
 
 Designed one at a time, as each becomes next.
