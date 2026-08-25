@@ -333,9 +333,357 @@ verified before then. Live `injury_status` values are `Out`, `IR`, `Sus`, `PUP`,
 
 ---
 
-## Stages 2–11
+# Stage 2 — Sleeper adapter and league sync
 
-Designed the same way, one stage at a time, as each becomes next. Stage 2's shape is already
-constrained by §2.2 and §2.3 — a per-league cache keyed by `league_id` rather than by user, the
-concurrency limiter at ~10, the time-of-week TTL table, and fixture capture happening _while_
-the adapter is written rather than after it.
+> **Spec:** §2.1 (onboarding), §2.2 (Loop B + the TTL table), §2.3 (rate-limit math), §5.1
+> (fixtures), §5.2 (sync_log)
+> **Goal:** any Sleeper username in, that person's leagues, rosters and lineups in Postgres
+> out — fetched through a cache and a rate limiter that keep a 2,200-league Sunday sweep
+> inside Sleeper's published ceiling.
+> **No rule engine. No client. No notifications.**
+
+Spec §2.3 is blunt about why this stage cannot be deferred or half-done: "Build the
+concurrency limiter and the per-league cache on day one. Retrofitting either one under real
+load, on a Sunday morning, with an IP block in progress, is the failure mode that ends the
+project."
+
+## 2.1 Five decisions, three of which depart from the spec
+
+### Decision 1 — the per-user leagues list already IS the league object; `/league/{id}` is not a sweep-time call
+
+Verified against a real league on 25 Aug 2026 (Sleeper's own published docs example,
+`289646328504385536`): `GET /user/{id}/leagues/nfl/{season}` does not return a thin list of
+ids. Each entry is the **complete** league object — `name`, `roster_positions`,
+`scoring_settings`, `settings`, `total_rosters`, `status` — byte-for-byte the same shape as a
+standalone `GET /league/{id}`. The spec's §2.3 call table treats these as two separate calls;
+they are the same data.
+
+That makes the standalone `/league/{id}` call **not part of the routine sweep at all**. Spec
+§2.2's Loop C already does "for each registered user: sync leagues" as its first step — that
+one call, which is unavoidable (there is no way to discover a user's league memberships
+except by asking for that user), refreshes every one of that user's leagues' settings for
+free. `/league/{id}` stays in the client as a standalone method (debugging, and a fallback for
+refreshing a single league with no active member), but the sync service does not call it on a
+schedule.
+
+This also **corrects an arithmetic gap in the original Decision 1** — that version priced the
+sweep as "~2,200 calls" but implicitly assumed the per-league settings refresh was free
+without ever counting the per-user leagues-list call needed to discover league membership in
+the first place. The honest total:
+
+| Call                              | Count                                     | Why                                                                                                        |
+| --------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `/user/{id}/leagues/nfl/{season}` | ~1,000 (one per registered user)          | Unavoidable — no other way to enumerate a user's leagues. Also refreshes league settings as a side effect. |
+| `/league/{id}/rosters`            | ~2,200 (one per distinct league, deduped) | The alarm's actual input — `starters[]`.                                                                   |
+| `/league/{id}`                    | 0 in the routine sweep                    | Folded into the leagues-list response above.                                                               |
+| `/league/{id}/users`              | 0 in the routine sweep                    | Not needed for the alarm; display names are a Stage 5+ nicety, refreshed on demand.                        |
+| `/league/{id}/matchups/{week}`    | 0 in the routine sweep                    | Not needed pre-kickoff; the live scoreboard (out of scope until later) is the consumer.                    |
+
+**~3,200 calls per full sweep**, not 2,200 and not the spec's 8,800. At the 800/min token
+bucket from Decision 2, a bucket that starts full (the API process is always-on, so it is
+idle and near-capacity going into Sunday) admits its first 800 calls immediately and drains
+the remaining 2,400 at the refill rate — **~3 minutes total**, confirmed by simulation in
+`rate-limiter.test.ts`, well inside the 10-minute spread window §2.3 targets, with room for
+retries.
+
+### Decision 2 — TTL is a function of endpoint _and_ time of week, not time of week alone
+
+Spec §2.2's TTL table varies only by when. The two endpoints actually on the sweep path have
+different volatility, and treating them alike would waste the saving above:
+
+| Endpoint                                   | What it holds                                   | Changes                        | TTL            |
+| ------------------------------------------ | ----------------------------------------------- | ------------------------------ | -------------- |
+| `/user/{id}/leagues/nfl/{season}`          | league settings, `roster_positions`, membership | Effectively never mid-season   | **24h, fixed** |
+| `/league/{id}/rosters`                     | `starters` — the alarm's actual input           | Constantly on Sunday morning   | **§2.3 table** |
+| `/league/{id}/users` (on demand)           | display names                                   | Effectively never mid-season   | **24h, fixed** |
+| `/league/{id}/matchups/{week}` (on demand) | live points                                     | Constantly on Sunday afternoon | **§2.3 table** |
+
+### Decision 3 — A concurrency cap is not a rate limiter
+
+Spec §2.3 says: "Spread across a ten-minute window with a concurrency limiter at ~10 you sit
+near 880/min." That equivalence only holds if every call takes ~680ms. Sleeper's small
+endpoints are far faster than that — Stage 1 measured the _14.6MB_ players payload at ~2.4s,
+so a few-KB roster response will land in the low hundreds of milliseconds. At 150ms per call,
+concurrency 10 yields **~4,000 calls/min — four times the published ceiling**, which is the
+IP block §6 lists as a Critical risk.
+
+Concurrency bounds how many requests are _in flight_; it does not bound _throughput_. Stage 2
+builds both, because they do different jobs:
+
+- **Token bucket** — the real limit. Refills at a configured calls/second, default **800/min**
+  (a 20% margin under Sleeper's 1,000). This is what keeps us legal.
+- **Semaphore, ~10** — caps in-flight sockets and memory. This is what keeps the process sane.
+
+### Decision 4 — Redis is the fast path, `synced_at` is the durable fallback
+
+There is an unstated overlap in the spec: Postgres already stores league state with a
+`synced_at` column, so "is this league fresh?" is answerable without Redis at all. Rather than
+pick one and leave the other redundant, they get distinct jobs:
+
+- **Redis (Upstash)** holds the raw Sleeper response per `(league, endpoint)` with the TTL
+  above. It is the freshness check and it avoids re-normalising.
+- **Postgres `synced_at`** is the fallback. If Redis is unreachable, freshness falls back to
+  comparing `synced_at` against the same TTL policy.
+
+The cache **fails open** — a Redis outage degrades to slower syncs, never to no syncs. That is
+safe precisely because the token bucket, not the cache, is what protects Sleeper.
+
+### Decision 5 — The rate limiter is only correct while exactly one machine is running
+
+An in-process token bucket bounds _this process_. Two machines means two buckets and double
+the effective rate, silently. Today [fly.toml](../fly.toml) pins `min_machines_running = 1`
+with `auto_stop_machines = false`, so the invariant holds — but it is an invariant, not an
+accident, and it must be written down before Stage 9's 500-user load test tempts anyone to
+scale out. **If a second machine is ever added, the limiter must move to a Redis-backed
+counter first.** The API logs its machine id at boot so a violation is visible.
+
+## 2.2 The endpoints
+
+Stage 1 built `/players/nfl` and `/state/nfl`. Stage 2 adds the six that remain:
+
+| #   | Endpoint                                      | Purpose                                                                                                  | Cached                   |
+| --- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------ |
+| 1   | `GET /v1/user/{username}`                     | username → `user_id` (§2.1 step 2)                                                                       | No — cheap, and identity |
+| 2   | `GET /v1/user/{user_id}/leagues/nfl/{season}` | every league, FULL objects (§2.1 step 3, Decision 1)                                                     | Per user, 24h            |
+| 3   | `GET /v1/league/{id}`                         | standalone fetch — debugging / single-league fallback only, NOT called by the routine sweep (Decision 1) | 24h                      |
+| 4   | `GET /v1/league/{id}/rosters`                 | `players[]`, `starters[]` — the alarm's actual input                                                     | Time-of-week             |
+| 5   | `GET /v1/league/{id}/users`                   | display names — fetched on demand, not swept                                                             | 24h                      |
+| 6   | `GET /v1/league/{id}/matchups/{week}`         | points, per-week lineups — fetched on demand, not swept                                                  | Time-of-week             |
+
+`{season}` comes from `nfl_state`, written by Stage 1's Loop A — never hardcoded. That is what
+the extra table was for.
+
+**An unknown username returns HTTP 200 with a body of `null`, not a 404.** Verified against
+the live API on 25 Aug 2026. This matters more than it looks: "I typed my username wrong" is
+the most-travelled error path in the entire product, and Stage 1's client would hand a bare
+`null` back to the caller as if it were a user. The adapter must translate it into an explicit
+typed miss. (`GET /v1/user/` with no username returns a 404 carrying an HTML body, which would
+throw on `res.json()` — Stage 1's client already rejects non-2xx before parsing, so that path
+is covered.)
+
+## 2.3 The TTL policy, and the hole in the spec's table
+
+A pure function: `(instant, endpoint) → seconds`. No I/O, no ambient clock, so it is
+table-testable.
+
+| Window (ET)         | TTL    | From                            |
+| ------------------- | ------ | ------------------------------- |
+| Tue–Fri             | 6h     | §2.2                            |
+| Sat                 | 1h     | §2.2                            |
+| **Sun 00:00–06:00** | **1h** | **Not in the spec — see below** |
+| Sun 06:00–13:00     | 5min   | §2.2                            |
+| Sun 13:00–24:00     | 60s    | §2.2                            |
+| Mon                 | 15min  | §2.2                            |
+
+**The spec's table has a gap:** Saturday ends and Sunday 06:00 begins, leaving Sunday midnight
+to 06:00 undefined. Filling it with 1 hour (continuous with Saturday) is the conservative read
+— nobody is setting lineups at 3am, and the 06:00 window takes over well before kickoff.
+
+**All windows are Eastern wall-clock, so the policy must do a real timezone conversion**, not
+UTC arithmetic with a fixed offset. On 1 November 2026 the clocks go back and every boundary
+in that table moves relative to UTC. `Intl.DateTimeFormat` with `timeZone: 'America/New_York'`
+does this correctly with no dependency, and the DST boundary gets an explicit test — same
+class of bug as the QStash schedule pinning in Stage 1, and the same reason to handle it on a
+cheap job before Loop C depends on it.
+
+## 2.4 Cache keys and the stampede
+
+```
+sleeper:v1:league:{id}              -> raw /league/{id}
+sleeper:v1:league:{id}:rosters      -> raw /league/{id}/rosters
+sleeper:v1:league:{id}:users        -> raw /league/{id}/users
+sleeper:v1:league:{id}:matchups:{w} -> raw matchups for week w
+sleeper:v1:user:{username}:leagues  -> league list for a user
+```
+
+**Keyed by league, never by user** — §2.2 is explicit, and it is what makes the rate-limit
+arithmetic work: two members of the same league share one entry, which is why 3,000
+memberships collapse to ~2,200 distinct leagues.
+
+The `v1:` segment is a manual kill switch. If a normaliser changes shape, bumping the prefix
+invalidates everything without waiting out a TTL or flushing a shared database.
+
+**Single-flight.** Fifty members of one league opening the app at 10:00 on a cold cache must
+produce one upstream fetch, not fifty. An in-process promise map keyed by cache key
+deduplicates concurrent misses. In-process is sufficient because of Decision 5 — one machine,
+one map. It moves to a Redis lock at the same time the limiter does.
+
+## 2.5 What lands in Postgres
+
+Stage 1 created these tables and left them empty. Stage 2 is what fills them:
+
+- **`leagues`** — one row per league, extracted from endpoint 2's response (Decision 1) —
+  not from a standalone endpoint-3 call.
+- **`memberships`** — the join table. Resolving `user_id` → `roster_id` per league is what
+  makes rule 7 possible later.
+- **`rosters`** — `players[]` and `starters[]` per roster, from endpoint 4.
+- **`users`** — identity only: `sleeper_user_id` and `username`. **No email, no timezone** —
+  §2.1 is emphatic that nothing is asked for until after leagues are on screen, and Stage 6 is
+  where accounts acquire the rest. The schema already allows this: `email` is nullable and
+  `tz` defaults.
+- **`sync_log`** — one row _per league_, which is what the `target` column exists for. A
+  single league failing must not abort a 2,200-league sweep; each is caught, logged, and
+  counted, and Stage 9 alerts when the failure rate crosses 5%.
+
+## 2.6 A public read route, and why it belongs in this stage
+
+Stage 3 is a two-day budget for an Expo app, and it starts a 14-day Play clock that cannot be
+restarted. It must not spend day one building backend. So Stage 2 ships the endpoint the
+ten-second path needs:
+
+```
+GET /v1/users/{username}/leagues
+```
+
+Resolve username → sync → return leagues with rosters. Stage 3 then consumes exactly one route.
+
+This is the first **unauthenticated public** surface in the project, and it triggers upstream
+fetches, so it is also the first abuse vector. Three defences, in order: the cache absorbs
+repeats, the token bucket caps what reaches Sleeper no matter how hard the route is hit, and a
+per-IP throttle (`@fastify/rate-limit`) keeps one client from monopolising the bucket.
+
+## 2.7 Fixtures — capture them while building, not after
+
+§5.1: "Capture a set of real league payloads into `/fixtures` in week one, before you need
+them." Stage 5's rule engine is tested entirely against these, and §5.1 notes they are also
+how work continues through the offseason when live data says nothing.
+
+Capture for each of endpoints 3–6, from real leagues, committed verbatim. Where a payload
+carries other league members' display names, it stays as captured — this is a private repo and
+the data is already public through Sleeper's own unauthenticated API.
+
+**This is the one part of Stage 2 that needs something only you have: a real Sleeper
+username.** Everything else can be built and tested without it; fixtures cannot.
+
+## 2.8 Verified against the live API on 25 Aug 2026, before building on it
+
+Stage 1's lesson was that the spec's estimates were three times off and that measuring changed
+the design. Same approach here, against a real league (Sleeper's own published docs example,
+`league_id 289646328504385536`):
+
+1. **`starters[]` → `roster_positions[]` mapping — CONFIRMED.** `roster_positions` for this
+   league is `[QB, RB, RB, WR, WR, TE, FLEX, FLEX, DEF, BN×6]` — nine non-`BN` slots.
+   `starters` for its rosters has exactly nine entries, and `starters[8]` is a team-defence id
+   (`"CLE"`) matching the lone `DEF` slot at the end. `starters[i]` is the i-th non-`BN` entry
+   in `roster_positions`, positionally, as assumed. Rule 2's copy ("on bye at WR2") can be
+   built on this with confidence.
+2. **The empty-slot sentinel — CONFIRMED, `"0"`, not `null`.** Not found in the docs-example
+   league, but hit live while exercising the public route end to end against a real
+   18-league account (25 Aug 2026): a pre-draft roster with zero players returned
+   `starters: ["0","0","0","0","0","0"]` and `players: []`. Rule 1's check needs `"0"` as a
+   real, observed case, not a hypothetical — `null` remains theoretically possible per the
+   spec's own wording but has still never been observed.
+3. **`matchups[week].starters` vs `rosters.starters` — CONFIRMED to diverge.** For roster 1,
+   week 1 of this (2018, now-historical) season: `matchups` starters were
+   `[421, 4035, 3242, 2133, 2449, 4531, 2257, 788, PHI]`; the _current_ `rosters.starters` for
+   the same roster is `[4881, 4035, 788, 2133, 2449, 2118, 223, 1352, CLE]` — different
+   players, different team defence. `rosters.starters` reflects whatever the roster is set to
+   **right now**; `matchups[week]` is that week's frozen record. This was a theoretical risk
+   in the original plan; it is now a demonstrated fact. **Consequence for Stage 5:**
+   evaluating "is this Sunday's lineup broken" must read `rosters.starters` — it is the only
+   endpoint that reflects a lineup not yet locked. `matchups` is for the live scoreboard
+   (later), not the alarm.
+4. **The per-user leagues-list response is the full league object — CONFIRMED**, and folded
+   into Decision 1 above.
+5. **The real `/user/{username}` shape is richer, and inconsistent on case.** The response
+   carries a `username` field (lowercased — `"2ksports"`) alongside `display_name` (original
+   case — `"2KSports"`), plus a long tail of always-null fields (`cookies`, `phone`,
+   `real_name`, `token`, …) that the normaliser ignores by construction. **Persist the API's
+   own `username` field, not what the caller typed** — it is the canonical value, and storing
+   it is what makes a second lookup by the same person resolve consistently regardless of the
+   case they typed.
+6. **Upstash round-trip latency from Fly `iad` — not yet measured.** Needs the Redis
+   credentials wired into a deployed environment; deferred to the implementation itself rather
+   than blocking the design.
+7. **Upstash free-tier command ceiling — not yet measured**, same reason as above. At 15
+   testers irrelevant; revisit before Stage 9's 500-user load test.
+8. **PGlite mis-parses a `null` element inside a `text[]` column, real Postgres does not —
+   found while writing `upsertRosters`.** A roster with an empty starting slot (spec rule 1,
+   `starters[i] == null`) written through PGlite reads back as the _string_ `"NULL"`, not a
+   real `null`. Verified two ways against the actually-deployed database (node-postgres +
+   Neon): `x[2] IS NULL` is server-side `TRUE` even when PGlite's own client read comes back
+   wrong, and node-postgres itself parses the identical column as a genuine JS `null`. **This
+   is a PGlite test-harness limitation, not an application bug** — production is correct
+   today. It matters for Stage 5: if a rule-1 fixture test against PGlite ever behaves
+   strangely around a null starter, check this before assuming the rule engine is broken.
+9. **Two performance bugs, found only by running the public route against a real 18-league
+   account rather than trusting the unit tests.** All 79 unit/service tests passed the whole
+   time; neither bug was visible from mocked or PGlite-backed tests, because both are about
+   what happens at real scale against a real remote database.
+   - **The per-league loop was sequential.** `syncUserLeagues` awaited one league at a time
+     despite `Semaphore(10)` existing specifically to allow controlled concurrency — the
+     semaphore was built and never actually used for the thing it was built for. Fixed to
+     `Promise.all` across leagues, which is what the semaphore was already there to bound.
+   - **`upsertRosters` and `upsertLeagues` wrote one row per remote round trip, in a loop,
+     unconditionally — including on a cache hit.** This is why a warm-cache repeat request
+     was barely faster than the cold one: caching was working correctly the whole time (both
+     Redis keys and TTLs were verified directly), but the DB write dominated regardless.
+     Batched into one multi-row `INSERT ... VALUES ... ON CONFLICT` each, matching Stage 1's
+     `upsertPlayers` pattern.
+   - **Measured, same real account, before and after both fixes:** cold sync 14.3s → 5.1s;
+     warm (cached) sync 11.4s → 2.1s — a 5.4x improvement on the path the "materially faster"
+     cache-hit criterion (§2.11 item 3) actually depends on. 2.1s for an 18-league account is
+     still short of spec §2.1's "under ten seconds," though comfortably within it — a typical
+     3-5 league user should land well under a second on the warm path.
+
+## 2.9 Tests
+
+The rule engine (§5.1's "only tests that matter") is Stage 5. Stage 2's testable surface is the
+machinery underneath it, and three pieces genuinely earn tests:
+
+1. **TTL policy** — table-driven across every window, both sides of each boundary, and
+   explicitly across the 1 Nov 2026 DST change. Pure function, fixed instants, no clock.
+2. **Token bucket** — with an injected clock: exhausts, refills at the right rate, never
+   exceeds budget over a simulated sweep. A rate limiter tested only against the real clock is
+   not tested.
+3. **Normalisers for endpoints 1–6** — against the captured fixtures, including the
+   `null`-body unknown-user case from §2.2.
+
+Plus the sync service against PGlite with a stubbed client: cache hit skips the fetch, cache
+miss writes both stores, one league failing does not abort the sweep, and concurrent misses for
+one league produce exactly one fetch.
+
+## 2.10 Risks
+
+| Risk                                                   | Handling                                                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| Rate limiter silently wrong if a second machine starts | Decision 5: invariant documented, machine id logged at boot; Redis-backed limiter before any scale-out |
+| Cache stampede on a cold Sunday                        | Single-flight promise map (§2.4)                                                                       |
+| Redis down mid-sweep                                   | Fail open to `synced_at`; the token bucket still bounds upstream load                                  |
+| A league 404s or changes shape mid-sweep               | Per-league try/catch → `sync_log` row; sweep continues                                                 |
+| `starters` ↔ `roster_positions` mapping assumed wrong  | §2.8 item 1, verified before Stage 5 depends on it                                                     |
+| Public route abused                                    | Cache, token bucket, per-IP throttle (§2.6)                                                            |
+| Sunday sweep exceeds the 09:15 completion alert (§5.2) | Decision 1 cuts the sweep ~4x; pacing target is the 10-minute window                                   |
+
+## 2.11 Definition of done
+
+1. `GET /v1/users/{username}/leagues` returns real leagues, rosters and lineups for a real
+   username against the deployed service.
+2. An unknown username returns a clean 404 from _our_ API — not a 200 carrying `null`.
+3. A second identical request inside the TTL is served from cache, provably: `sync_log` shows
+   no new fetch, and the response is materially faster.
+4. `leagues`, `memberships` and `rosters` are populated in Neon and consistent with what
+   Sleeper returns.
+5. A simulated sweep of ≥500 leagues against a stubbed client stays under the configured
+   per-minute budget, measured — not asserted.
+6. Killing Redis (bad credentials) degrades to `synced_at` and still syncs.
+7. Fixtures for endpoints 3–6 committed under `fixtures/`.
+8. CI green; deployed to Fly through the pipeline that now works.
+
+## 2.12 Explicitly not in Stage 2
+
+No rule engine and nothing in `packages/rules`. No bye weeks (Stage 4). No Expo app (Stage 3).
+No notifications, no email, no scheduler wiring — Loop C is Stage 6 and merely _calls_ the
+sweep this stage builds. No live scoreboard. No auth, no accounts beyond an identity row.
+
+## 2.13 What Stage 2 needs from you
+
+**Your Sleeper username** — the one item that blocks fixture capture (§2.7), and the same data
+that §7's Day 7 and the rule-7 tuning in §6 depend on. Everything else in this stage can be
+built, tested and deployed without it.
+
+---
+
+## Stages 3–11
+
+Designed one at a time, as each becomes next.

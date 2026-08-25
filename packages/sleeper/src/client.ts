@@ -1,6 +1,27 @@
-import { normaliseNflState, normalisePlayers } from './normalise.js';
-import type { NormalisedPlayersResult } from './normalise.js';
-import type { NormalisedNflState, RawNflState, RawPlayersResponse } from './types.js';
+import {
+  normaliseLeague,
+  normaliseLeagues,
+  normaliseLeagueUsers,
+  normaliseMatchups,
+  normaliseNflState,
+  normalisePlayers,
+  normaliseRosters,
+  normaliseUser,
+} from './normalise.js';
+import type {
+  NormalisedLeaguesResult,
+  NormalisedLeagueUsersResult,
+  NormalisedMatchupsResult,
+  NormalisedPlayersResult,
+  NormalisedRostersResult,
+} from './normalise.js';
+import type {
+  NormalisedLeague,
+  NormalisedNflState,
+  NormalisedUser,
+  RawNflState,
+  RawPlayersResponse,
+} from './types.js';
 
 const DEFAULT_BASE_URL = 'https://api.sleeper.app/v1';
 
@@ -75,5 +96,71 @@ export class SleeperClient {
   /** `GET /v1/state/nfl` -- the current season and week. */
   async getNflState(): Promise<NormalisedNflState> {
     return normaliseNflState(await this.get<RawNflState>('/state/nfl'));
+  }
+
+  /**
+   * `GET /v1/user/{username}` -- username to `user_id` (spec §2.1 step 2).
+   *
+   * Returns `null` for an unknown username rather than throwing: CONFIRMED live 25 Aug 2026
+   * that Sleeper answers with HTTP 200 and a body of `null`, not a 404. This is the
+   * most-travelled error path in the product -- a typo'd username -- and callers must be
+   * able to distinguish "no such user" from a real failure.
+   */
+  async getUser(username: string): Promise<NormalisedUser | null> {
+    return normaliseUser(await this.get<unknown>(`/user/${encodeURIComponent(username)}`));
+  }
+
+  /**
+   * `GET /v1/user/{userId}/leagues/nfl/{season}` -- every league a user is in (spec §2.1
+   * step 3).
+   *
+   * CONFIRMED live 25 Aug 2026 that each entry is the FULL league object -- identical in
+   * shape to `getLeague()` below. build-plan.md S2 Decision 1: this is why the routine sweep
+   * never needs a standalone per-league fetch to get settings.
+   */
+  async getUserLeagues(userId: string, season: string): Promise<NormalisedLeaguesResult> {
+    return normaliseLeagues(
+      await this.get<unknown>(
+        `/user/${encodeURIComponent(userId)}/leagues/nfl/${encodeURIComponent(season)}`,
+      ),
+    );
+  }
+
+  /**
+   * `GET /v1/league/{id}` -- standalone league fetch.
+   *
+   * NOT called by the routine sweep (build-plan.md S2 Decision 1) -- `getUserLeagues` already
+   * returns this same shape for every league a synced user belongs to. This exists for
+   * debugging and as a fallback to refresh a single league with no currently-active member.
+   */
+  async getLeague(leagueId: string): Promise<NormalisedLeague | null> {
+    return normaliseLeague(await this.get<unknown>(`/league/${encodeURIComponent(leagueId)}`));
+  }
+
+  /**
+   * `GET /v1/league/{id}/rosters` -- `starters[]`, the alarm's actual input.
+   */
+  async getLeagueRosters(leagueId: string): Promise<NormalisedRostersResult> {
+    return normaliseRosters(
+      await this.get<unknown>(`/league/${encodeURIComponent(leagueId)}/rosters`),
+    );
+  }
+
+  /** `GET /v1/league/{id}/users` -- display names. Fetched on demand, not swept. */
+  async getLeagueUsers(leagueId: string): Promise<NormalisedLeagueUsersResult> {
+    return normaliseLeagueUsers(
+      await this.get<unknown>(`/league/${encodeURIComponent(leagueId)}/users`),
+    );
+  }
+
+  /**
+   * `GET /v1/league/{id}/matchups/{week}` -- CONFIRMED live to diverge from `rosters.starters`
+   * for a past week (build-plan.md S2 §2.8, item 3). Fetched on demand for the live
+   * scoreboard, not read by the alarm.
+   */
+  async getLeagueMatchups(leagueId: string, week: number): Promise<NormalisedMatchupsResult> {
+    return normaliseMatchups(
+      await this.get<unknown>(`/league/${encodeURIComponent(leagueId)}/matchups/${week}`),
+    );
   }
 }

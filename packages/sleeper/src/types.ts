@@ -53,3 +53,106 @@ export interface NormalisedNflState {
   week: number;
   displayWeek: number;
 }
+
+/**
+ * `GET /v1/user/{username}`. Verified against the live API 25 Aug 2026: the real object
+ * carries a long tail of always-null fields (`cookies`, `phone`, `real_name`, `token`, …)
+ * that are omitted here by construction. An unknown username returns HTTP 200 with a body
+ * of `null`, not a 404 -- see `normaliseUser`.
+ */
+export interface RawSleeperUser {
+  user_id?: unknown;
+  /** Canonical, lowercased. Persist this, not what the caller typed -- see build-plan.md S2. */
+  username?: unknown;
+  display_name?: unknown;
+  [key: string]: unknown;
+}
+
+export interface NormalisedUser {
+  sleeperUserId: string;
+  username: string;
+  displayName: string | null;
+}
+
+/**
+ * `GET /v1/user/{id}/leagues/nfl/{season}`. Verified live 25 Aug 2026: each entry is the
+ * SAME shape as a standalone `GET /league/{id}` -- full settings, not a thin reference. That
+ * is Decision 1 in build-plan.md S2: the standalone league fetch is not needed on the sweep
+ * path because this response already carries everything it would return.
+ */
+export interface RawSleeperLeague {
+  league_id?: unknown;
+  name?: unknown;
+  season?: unknown;
+  status?: unknown;
+  total_rosters?: unknown;
+  roster_positions?: unknown;
+  scoring_settings?: unknown;
+  [key: string]: unknown;
+}
+
+export interface NormalisedLeague {
+  sleeperLeagueId: string;
+  name: string;
+  season: string;
+  totalRosters: number | null;
+  rosterPositions: string[] | null;
+  scoringSettings: Record<string, unknown> | null;
+}
+
+/** `GET /v1/league/{id}/rosters`. One entry per team in the league. */
+export interface RawSleeperRoster {
+  roster_id?: unknown;
+  owner_id?: unknown;
+  players?: unknown;
+  /**
+   * Positional: starters[i] is the i-th non-"BN" slot in the league's roster_positions.
+   * Confirmed against real data 25 Aug 2026 -- see build-plan.md S2 §2.8. Spec §3 rule 1 says
+   * an empty slot is "0" or null; no example of either turned up in the league probed, so
+   * that remains unconfirmed until Stage 5.
+   */
+  starters?: unknown;
+  [key: string]: unknown;
+}
+
+export interface NormalisedRoster {
+  rosterId: number;
+  /** Sleeper's user id of the owner. Null for an unclaimed/orphaned roster. */
+  ownerUserId: string | null;
+  players: string[];
+  starters: (string | null)[];
+}
+
+/** `GET /v1/league/{id}/users`. Display names for a league's members. */
+export interface RawSleeperLeagueUser {
+  user_id?: unknown;
+  display_name?: unknown;
+  [key: string]: unknown;
+}
+
+export interface NormalisedLeagueUser {
+  sleeperUserId: string;
+  displayName: string | null;
+}
+
+/**
+ * `GET /v1/league/{id}/matchups/{week}`. One entry per roster for that week.
+ *
+ * CONFIRMED to diverge from the same roster's live `rosters.starters` for a past week
+ * (build-plan.md S2 §2.8, item 3) -- this is the week's frozen record, not the current
+ * lineup. The alarm reads `rosters.starters`; this is for the live scoreboard, later.
+ */
+export interface RawSleeperMatchup {
+  roster_id?: unknown;
+  matchup_id?: unknown;
+  points?: unknown;
+  starters?: unknown;
+  [key: string]: unknown;
+}
+
+export interface NormalisedMatchup {
+  rosterId: number;
+  matchupId: number | null;
+  points: number | null;
+  starters: (string | null)[];
+}
