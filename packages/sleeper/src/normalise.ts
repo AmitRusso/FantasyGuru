@@ -1,9 +1,19 @@
 import type {
+  NormalisedLeague,
+  NormalisedLeagueUser,
+  NormalisedMatchup,
   NormalisedNflState,
   NormalisedPlayer,
+  NormalisedRoster,
+  NormalisedUser,
   RawNflState,
   RawPlayersResponse,
+  RawSleeperLeague,
+  RawSleeperLeagueUser,
+  RawSleeperMatchup,
   RawSleeperPlayer,
+  RawSleeperRoster,
+  RawSleeperUser,
 } from './types.js';
 
 /**
@@ -156,4 +166,201 @@ export function normaliseNflState(raw: RawNflState): NormalisedNflState {
     week,
     displayWeek: int(raw.display_week) ?? week,
   };
+}
+
+/**
+ * `GET /v1/user/{username}`.
+ *
+ * CONFIRMED live 25 Aug 2026: an unknown username is HTTP 200 with a body of `null`, not a
+ * 404 -- the most-travelled error path in the product (a typo'd username), and the reason
+ * this returns `null` explicitly rather than throwing on a shape it cannot use. Persists the
+ * API's own `username` field, not what the caller typed: it is canonical and lowercased,
+ * where `display_name` preserves the case the person actually chose.
+ */
+export function normaliseUser(raw: unknown): NormalisedUser | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null;
+
+  const user = raw as RawSleeperUser;
+  const sleeperUserId = str(user.user_id);
+  const username = str(user.username);
+  if (!sleeperUserId || !username) return null;
+
+  return { sleeperUserId, username, displayName: str(user.display_name) };
+}
+
+/** A player id array. Non-string entries are dropped silently -- they cannot be looked up. */
+function strArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((v) => str(v)).filter((v): v is string => v !== null);
+}
+
+/**
+ * A starters array. Unlike `strArray`, nulls are preserved rather than dropped: spec rule 1
+ * says an empty starting slot is `"0"` or `null`, and dropping either would shift every
+ * later index out of alignment with `roster_positions` -- silently corrupting the one
+ * positional mapping confirmed in build-plan.md S2 §2.8.
+ */
+function starterArray(value: unknown): (string | null)[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((v) => str(v));
+}
+
+function record(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+/**
+ * `GET /v1/user/{id}/leagues/nfl/{season}`.
+ *
+ * CONFIRMED live 25 Aug 2026 (build-plan.md S2, Decision 1): each entry is the full league
+ * object, identical in shape to a standalone `GET /league/{id}` -- so this one function
+ * normalises both that response's entries AND a standalone league fetch.
+ */
+export function normaliseLeague(raw: unknown): NormalisedLeague | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null;
+
+  const league = raw as RawSleeperLeague;
+  const sleeperLeagueId = str(league.league_id);
+  const name = str(league.name);
+  const season = str(league.season);
+  if (!sleeperLeagueId || !name || !season) return null;
+
+  return {
+    sleeperLeagueId,
+    name,
+    season,
+    totalRosters: int(league.total_rosters),
+    rosterPositions: Array.isArray(league.roster_positions)
+      ? strArray(league.roster_positions)
+      : null,
+    scoringSettings: record(league.scoring_settings),
+  };
+}
+
+export interface NormalisedLeaguesResult {
+  leagues: NormalisedLeague[];
+  skipped: number;
+}
+
+export function normaliseLeagues(raw: unknown): NormalisedLeaguesResult {
+  if (!Array.isArray(raw)) return { leagues: [], skipped: 0 };
+
+  const leagues: NormalisedLeague[] = [];
+  let skipped = 0;
+  for (const entry of raw) {
+    const league = normaliseLeague(entry);
+    if (league) leagues.push(league);
+    else skipped += 1;
+  }
+  return { leagues, skipped };
+}
+
+/**
+ * `GET /v1/league/{id}/rosters`. This is the alarm's actual input -- `starters[]` is what
+ * rules 1-3 read.
+ */
+export function normaliseRoster(raw: unknown): NormalisedRoster | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null;
+
+  const roster = raw as RawSleeperRoster;
+  const rosterId = int(roster.roster_id);
+  if (rosterId === null) return null;
+
+  return {
+    rosterId,
+    ownerUserId: str(roster.owner_id),
+    players: strArray(roster.players),
+    starters: starterArray(roster.starters),
+  };
+}
+
+export interface NormalisedRostersResult {
+  rosters: NormalisedRoster[];
+  skipped: number;
+}
+
+export function normaliseRosters(raw: unknown): NormalisedRostersResult {
+  if (!Array.isArray(raw)) return { rosters: [], skipped: 0 };
+
+  const rosters: NormalisedRoster[] = [];
+  let skipped = 0;
+  for (const entry of raw) {
+    const roster = normaliseRoster(entry);
+    if (roster) rosters.push(roster);
+    else skipped += 1;
+  }
+  return { rosters, skipped };
+}
+
+/** `GET /v1/league/{id}/users`. Fetched on demand (build-plan.md S2, Decision 1), not swept. */
+export function normaliseLeagueUser(raw: unknown): NormalisedLeagueUser | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null;
+
+  const user = raw as RawSleeperLeagueUser;
+  const sleeperUserId = str(user.user_id);
+  if (!sleeperUserId) return null;
+
+  return { sleeperUserId, displayName: str(user.display_name) };
+}
+
+export interface NormalisedLeagueUsersResult {
+  users: NormalisedLeagueUser[];
+  skipped: number;
+}
+
+export function normaliseLeagueUsers(raw: unknown): NormalisedLeagueUsersResult {
+  if (!Array.isArray(raw)) return { users: [], skipped: 0 };
+
+  const users: NormalisedLeagueUser[] = [];
+  let skipped = 0;
+  for (const entry of raw) {
+    const user = normaliseLeagueUser(entry);
+    if (user) users.push(user);
+    else skipped += 1;
+  }
+  return { users, skipped };
+}
+
+/**
+ * `GET /v1/league/{id}/matchups/{week}`.
+ *
+ * CONFIRMED live 25 Aug 2026 to diverge from the same roster's `rosters.starters` once a
+ * week is in the past (build-plan.md S2 §2.8, item 3) -- this is that week's frozen record,
+ * not the current lineup. Not read by the alarm; kept for the later live scoreboard.
+ */
+export function normaliseMatchup(raw: unknown): NormalisedMatchup | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null;
+
+  const matchup = raw as RawSleeperMatchup;
+  const rosterId = int(matchup.roster_id);
+  if (rosterId === null) return null;
+
+  return {
+    rosterId,
+    matchupId: int(matchup.matchup_id),
+    points: (() => {
+      const p = matchup.points;
+      return typeof p === 'number' && Number.isFinite(p) ? p : null;
+    })(),
+    starters: starterArray(matchup.starters),
+  };
+}
+
+export interface NormalisedMatchupsResult {
+  matchups: NormalisedMatchup[];
+  skipped: number;
+}
+
+export function normaliseMatchups(raw: unknown): NormalisedMatchupsResult {
+  if (!Array.isArray(raw)) return { matchups: [], skipped: 0 };
+
+  const matchups: NormalisedMatchup[] = [];
+  let skipped = 0;
+  for (const entry of raw) {
+    const matchup = normaliseMatchup(entry);
+    if (matchup) matchups.push(matchup);
+    else skipped += 1;
+  }
+  return { matchups, skipped };
 }

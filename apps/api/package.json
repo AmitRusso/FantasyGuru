@@ -13,6 +13,7 @@
   "dependencies": {
     "@fantasyguru/db": "workspace:*",
     "@fantasyguru/sleeper": "workspace:*",
+    "@fastify/rate-limit": "^10.2.1",
     "@sentry/node": "^8.47.0",
     "@upstash/qstash": "^2.7.20",
     "fastify": "^5.2.0",
@@ -20,6 +21,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.10"
+    "@electric-sql/pglite": "^0.2.15",
+    "@types/pg": "^8.11.10",
+    "drizzle-orm": "^0.38.2"
   }
 }

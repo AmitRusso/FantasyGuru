@@ -1,0 +1,248 @@
+[
+  {
+    "avatar": "cc12ec49965eb7856f84d71cf85306af",
+    "display_name": "2KSports",
+    "is_bot": null,
+    "is_owner": true,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "on",
+      "mascot_item_type_id_leg_16": "dawg-pound",
+      "mascot_item_type_id_leg_17": "dawg-pound",
+      "mention_pn": "on",
+      "player_nickname_update": "on",
+      "team_name": "Giant Dolphins",
+      "team_name_update": "on",
+      "transaction_commissioner": "on",
+      "transaction_free_agent": "on",
+      "transaction_trade": "on",
+      "transaction_waiver": "on",
+      "user_message_pn": "on"
+    },
+    "settings": null,
+    "user_id": "457511950237696"
+  },
+  {
+    "avatar": "nfl_sf",
+    "display_name": "sunny",
+    "is_bot": null,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "off",
+      "mention_pn": "on",
+      "player_nickname_update": "off",
+      "team_name_update": "off",
+      "transaction_commissioner": "off",
+      "transaction_free_agent": "off",
+      "transaction_trade": "off",
+      "transaction_waiver": "off",
+      "user_message_pn": "off"
+    },
+    "settings": null,
+    "user_id": "476735150112768"
+  },
+  {
+    "avatar": "eefceb945b9159798eac0eb764d3fbc4",
+    "display_name": "TKO",
+    "is_bot": null,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "on",
+      "mention_pn": "on",
+      "player_nickname_update": "on",
+      "team_name": "Not saved by the Bell",
+      "team_name_update": "on",
+      "transaction_commissioner": "on",
+      "transaction_free_agent": "on",
+      "transaction_trade": "on",
+      "transaction_waiver": "on",
+      "user_message_pn": "off"
+    },
+    "settings": null,
+    "user_id": "521611313037312"
+  },
+  {
+    "avatar": "0b0c6764f4ca773e86260b43c1731dfe",
+    "display_name": "feiyingx",
+    "is_bot": null,
+    "is_owner": true,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "on",
+      "mention_pn": "on",
+      "team_name": "🔥Gordon x Gordon 🔥"
+    },
+    "settings": null,
+    "user_id": "667279356739584"
+  },
+  {
+    "avatar": "9402d1b023f90e63d0c866c104869809",
+    "display_name": "tobrepeels",
+    "is_bot": null,
+    "is_owner": true,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "off",
+      "mention_pn": "on"
+    },
+    "settings": null,
+    "user_id": "720638189125632"
+  },
+  {
+    "avatar": "1799db086bc5e636807a0ffe808dde3b",
+    "display_name": "TOBOT",
+    "is_bot": null,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "off",
+      "mention_pn": "on",
+      "player_nickname_update": "on",
+      "team_name_update": "on",
+      "transaction_commissioner": "on",
+      "transaction_free_agent": "on",
+      "transaction_trade": "on",
+      "transaction_waiver": "on",
+      "user_message_pn": "on"
+    },
+    "settings": null,
+    "user_id": "3975968863961088"
+  },
+  {
+    "avatar": "54c7be29a05648a0b156c6ec3ce6ffdf",
+    "display_name": "Discarded",
+    "is_bot": null,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "on",
+      "mention_pn": "on",
+      "team_name": "Who needs RB’s"
+    },
+    "settings": null,
+    "user_id": "31161755661385728"
+  },
+  {
+    "avatar": "f41d6e80519da8a4fe532196a3bb34f4",
+    "display_name": "akahotcheetos",
+    "is_bot": null,
+    "is_owner": true,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "on",
+      "archived": "on",
+      "mention_pn": "on",
+      "team_name": "PA champ. 💩 "
+    },
+    "settings": null,
+    "user_id": "61960473868124160"
+  },
+  {
+    "avatar": "47b27700aef00a569948cb77be68b54d",
+    "display_name": "canzhi",
+    "is_bot": null,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "on",
+      "mention_pn": "on"
+    },
+    "settings": null,
+    "user_id": "76888557872365568"
+  },
+  {
+    "avatar": "c99311341d58b4c50d6e0a6a6a0dfebf",
+    "display_name": "progamer",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "off",
+      "mascot_item_type_id_leg_16": "cheesehead",
+      "mascot_item_type_id_leg_17": "cheesehead",
+      "mention_pn": "on",
+      "player_nickname_update": "on",
+      "team_name": "Kamara is the new DJ",
+      "team_name_update": "on",
+      "transaction_commissioner": "on",
+      "transaction_free_agent": "on",
+      "transaction_trade": "on",
+      "transaction_waiver": "on",
+      "user_message_pn": "on"
+    },
+    "settings": null,
+    "user_id": "189140835533586432"
+  },
+  {
+    "avatar": "db7b742f6549b03367eb48ed1e328e5e",
+    "display_name": "liangsharon24",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "on",
+      "mention_pn": "on",
+      "player_nickname_update": "on",
+      "team_name": "🍿🏖🍻",
+      "team_name_update": "on",
+      "transaction_commissioner": "on",
+      "transaction_free_agent": "on",
+      "transaction_trade": "on",
+      "transaction_waiver": "on",
+      "user_message_pn": "on"
+    },
+    "settings": null,
+    "user_id": "228297280283734016"
+  },
+  {
+    "avatar": "a047e4610be938f0d2ceec22f5877f27",
+    "display_name": "evbettor",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "off",
+      "mention_pn": "on",
+      "team_name": "Bless em 🙏🇨🇱"
+    },
+    "settings": null,
+    "user_id": "313952381563858944"
+  },
+  {
+    "avatar": "740715586f5fecd032030346acf139c5",
+    "display_name": "deshine",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "on",
+      "mascot_message": "off",
+      "mention_pn": "on",
+      "player_nickname_update": "on",
+      "team_name": "Pickle Rick Mahomes",
+      "team_name_update": "on",
+      "transaction_commissioner": "on",
+      "transaction_free_agent": "on",
+      "transaction_trade": "on",
+      "transaction_waiver": "on",
+      "user_message_pn": "on"
+    },
+    "settings": null,
+    "user_id": "314278749690396672"
+  },
+  {
+    "avatar": "fed35eef4b71cc48b383db68b9ef0c31",
+    "display_name": "lamgigi",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "289646328504385536",
+    "metadata": {
+      "allow_pn": "on",
+      "mention_pn": "on"
+    },
+    "settings": null,
+    "user_id": "380479821538410496"
+  }
+]
