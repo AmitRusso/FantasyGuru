@@ -1,0 +1,8 @@
+# Normalise line endings. Without this, core.autocrlf=true gives Windows worktrees CRLF
+# while git stores LF -- so `pnpm format:check` fails locally on every file while CI (Linux,
+# LF) passes, which makes a real check untrustworthy. Forcing LF in the worktree makes local
+# and CI agree.
+* text=auto eol=lf
+
+pnpm-lock.yaml linguist-generated=true
+packages/db/migrations/** linguist-generated=true
