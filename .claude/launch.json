@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": ["pnpm", "--filter", "@fantasyguru/mobile", "exec", "expo", "start", "--web"],
+      "port": 8081
+    },
+    {
+      "name": "api-local",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": [
+        "pnpm",
+        "--filter",
+        "@fantasyguru/api",
+        "exec",
+        "node",
+        "--env-file=.env",
+        "dist/index.js"
+      ],
+      "port": 8080
+    }
+  ]
+}

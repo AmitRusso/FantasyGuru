@@ -734,20 +734,41 @@ check before pacing the next three weeks around it.
 
 ## 3.2 Decisions
 
-### Decision 1 — pnpm + Metro is the real technical risk here; decide the fallback before hitting it
+### Decision 1 — pnpm + Metro: the commonly-documented config is wrong for this repo's layout
 
-build-plan §1 already flagged Metro `watchFolders` as "the cost, paid in Stage 3." Having now
-built two stages on this workspace, the risk is sharper than that: this repo sets
-`hoist=false` in `.npmrc` deliberately (Stage 1, to keep `packages/rules` dependency-free),
-and pnpm's strict symlinked `node_modules` is historically the exact layout Metro handles
-worst.
+build-plan §1 already flagged Metro `watchFolders` as "the cost, paid in Stage 3," and the
+plan's first draft assumed the standard Expo-monorepo recipe would apply as-is: `watchFolders`
+at the workspace root, plus `resolver.nodeModulesPaths` covering both the app and root, plus
+`resolver.disableHierarchicalLookup`. **Building it proved that recipe actively wrong here.**
 
-The intended configuration is the documented one — `watchFolders` pointing at the workspace
-root, `nodeModulesPaths` covering both the app and root, and `disableHierarchicalLookup`.
-**The fallback, if that fights back, is `node-linker=hoisted` scoped to `apps/mobile`.** That
-trades some of the strictness Stage 1 chose for a layout Metro is known to handle, and it is
-a far better outcome than losing a day of a two-day gate stage to bundler archaeology. Decide
-this on the clock, not in the moment.
+With `disableHierarchicalLookup` set, `expo-router`'s own internal import of
+`@expo/metro-runtime` failed to resolve, and once that was removed, NativeWind's babel
+transform injecting an import of `react-native-css-interop/jsx-runtime` into our own
+`_layout.tsx` failed the same way. Both are real packages, correctly installed by pnpm — just
+not reachable from where Metro was told to look.
+
+The reason: pnpm's strict, non-flat layout puts a package's own transitive dependencies
+inside _that package's_ private `node_modules/.pnpm/<pkg>/node_modules/` scope. Metro's
+DEFAULT per-file hierarchical resolution — walking up from each importing file, the same
+algorithm Node itself uses — finds this correctly, because pnpm's whole design assumes a
+resolver that does exactly that. `disableHierarchicalLookup` plus a flat `nodeModulesPaths`
+list is the right fix for **npm or Yarn's hoisted trees**, which is what most Expo-monorepo
+guides assume — and it is precisely wrong for pnpm, because it disables the one mechanism
+that correctly finds a package's own scoped dependencies.
+
+**The actual, working config is smaller than planned:** `watchFolders = [workspaceRoot]` (so
+Metro's file watcher notices `packages/contracts`, whose real files live outside
+`apps/mobile`'s own directory tree) and nothing else. No custom `nodeModulesPaths`, no
+`disableHierarchicalLookup`. `@fantasyguru/contracts` resolves anyway, because pnpm links it
+directly into `apps/mobile/node_modules/@fantasyguru/contracts` — Metro's default resolution
+already finds anything symlinked directly into the consuming package.
+
+One real, separate finding this surfaced: **a package injected into your OWN files by a
+babel transform (NativeWind's `jsxImportSource`) must be a DIRECT dependency of the app, not
+merely a transitive dependency of the tool that injects it.** `react-native-css-interop` is
+nativewind's dependency, not `apps/mobile`'s — but the injected import is resolved as if
+written by hand in `_layout.tsx`, which has no such private scope to search from. Added
+`react-native-css-interop` directly, pinned to the exact version NativeWind itself depends on.
 
 ### Decision 2 — a `packages/contracts` package, because the app must never import `pg`
 
@@ -963,6 +984,40 @@ Ordered by how much they block:
    §6 already lists this as available.
 7. **Your Sleeper username** — still outstanding from Stage 2, still needed for real fixtures
    and rule-7 tuning, and now also the most realistic thing to type into the app on day one.
+
+## 3.14 A Stage 2 gap, found only by actually building a browser client for it
+
+`apps/api` never had CORS configured. Stage 2 was exercised entirely through `curl` and Node
+scripts — neither is subject to browser CORS enforcement, so the gap was invisible through
+two stages of real, live testing against the deployed service. It surfaced the moment an
+actual browser called `GET /v1/users/{username}/leagues` from the web build: the request
+never reached the response-handling code at all, blocked client-side with no
+`Access-Control-Allow-Origin` header present.
+
+Fixed with `@fastify/cors`, scoped to `publicRoutes` only via Fastify's plugin encapsulation
+— `/health` and `/internal/*` are never meant to be called from a browser and stay
+unaffected. `origin: true` (reflect the caller's origin), GET-only: this route is public,
+unauthenticated, read-only, and sends no cookies or credentials, so there is no ambient
+authority for a restrictive origin allowlist to protect — anyone can already call it directly
+with `curl`.
+
+**Verified end to end**, not just typechecked: ran `apps/api` locally against the real
+deployed Neon and Upstash, pointed the Expo web dev server at it, and drove the actual app
+through a real Chromium tab —
+
+- Cold open renders with the real copy.
+- Submitting `2KSports` (build-plan.md S2's real 18-league test account) reaches the local
+  API, which reaches the real Sleeper API, and the dashboard renders all 18 real leagues by
+  name.
+- Reloading the page with no route goes straight to the dashboard with the same data —
+  DoD item 4, `saveIdentity` firing correctly on a real success.
+- Navigating directly to `/dashboard?username=totally-fake-user-zzz` renders the "we couldn't
+  find that username" state — the 404 path, correct copy, correct affordance.
+
+Not yet exercised live: the Sleeper-unreachable and warming-up states (both require breaking
+something on purpose, deferred to whenever the deployed CORS fix needs its own verification
+pass), and the true empty-leagues state (needs a real account with zero current-season
+leagues, which `2KSports` is not).
 
 ---
 
