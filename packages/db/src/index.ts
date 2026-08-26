@@ -13,3 +13,13 @@ export { upsertLeague, upsertLeagues, getLeaguesForUser } from './leagues.js';
 export type { StoredLeague } from './leagues.js';
 export { upsertRosters, getRostersSyncedAt, getRostersForLeague } from './rosters.js';
 export { upsertMembership } from './memberships.js';
+export { byeWeekForTeam, byeTeamsForWeek, byeWeeksForSeason } from './bye-weeks.js';
+export { getSharedPlayers } from './shared-players.js';
+export type {
+  SharedPlayersView,
+  SharedPlayer,
+  SharedPlayerLeagueEntry,
+  SharedPlayerStatus,
+  LeagueLineup,
+  LineupSlot,
+} from './shared-players.js';

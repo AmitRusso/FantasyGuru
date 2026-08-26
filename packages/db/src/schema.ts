@@ -92,6 +92,18 @@ export const rosters = pgTable(
      */
     players: text('players').array(),
     starters: text('starters').array(),
+    /**
+     * Injured reserve and practice squad. Added in Stage 4 (build-plan.md S4 Decision 5)
+     * because rule 7's "benched in league B" is `players - starters` in the spec, and both of
+     * these arrays are SUBSETS of `players` that are absent from `starters` -- verified on a
+     * real roster payload, where 9 of 12 rosters had someone on IR. Without them, a player you
+     * started in league A while he sits on IR in league B reads as an inconsistency to fix,
+     * which is the precise "cries wolf" failure spec §6 predicts will sink rule 7.
+     *
+     * Benched, correctly, is `players - starters - reserve - taxi`.
+     */
+    reserve: text('reserve').array(),
+    taxi: text('taxi').array(),
     syncedAt: timestamp('synced_at', { withTimezone: true }),
   },
   (table) => [primaryKey({ columns: [table.leagueId, table.rosterId] })],

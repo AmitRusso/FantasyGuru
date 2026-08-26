@@ -8,6 +8,27 @@
       "when": 1787592526105,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787736208535,
+      "tag": "0001_add_roster_reserve_taxi",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787736239447,
+      "tag": "0002_seed_2026_bye_weeks",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787736981248,
+      "tag": "0003_invalidate_roster_sync_for_reserve_backfill",
+      "breakpoints": true
     }
   ]
 }

@@ -112,6 +112,14 @@ export interface RawSleeperRoster {
    * that remains unconfirmed until Stage 5.
    */
   starters?: unknown;
+  /**
+   * Injured reserve and practice squad. Both are SUBSETS of `players` and are absent from
+   * `starters` -- confirmed on the captured fixture (build-plan.md S4 Decision 5), where 9 of
+   * 12 real rosters carried at least one `reserve` id. Rule 7 must subtract them, or every IR
+   * stash reads as a bench decision the user should fix.
+   */
+  reserve?: unknown;
+  taxi?: unknown;
   [key: string]: unknown;
 }
 
@@ -121,6 +129,9 @@ export interface NormalisedRoster {
   ownerUserId: string | null;
   players: string[];
   starters: (string | null)[];
+  /** See RawSleeperRoster.reserve -- subsets of `players`, never part of `starters`. */
+  reserve: string[];
+  taxi: string[];
 }
 
 /** `GET /v1/league/{id}/users`. Display names for a league's members. */

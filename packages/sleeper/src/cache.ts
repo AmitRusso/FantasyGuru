@@ -56,7 +56,18 @@ export function failOpen(store: CacheStore, logger: CacheLogger = NOOP_LOGGER): 
  */
 export const CacheKeys = {
   userLeagues: (userId: string): string => `sleeper:v1:user:${userId}:leagues`,
-  leagueRosters: (leagueId: string): string => `sleeper:v1:league:${leagueId}:rosters`,
+  /**
+   * v2, not v1, and the bump is load-bearing rather than cosmetic.
+   *
+   * What Redis holds under this key is a `NormalisedRoster[]`, not the raw Sleeper payload --
+   * so when that TYPE gains a field, every entry already in the cache is a stale shape.
+   * Stage 4 added `reserve` and `taxi` (build-plan.md S4 Decision 5), and without a bump the
+   * deploy would spend one TTL window writing rosters whose IR and taxi lists silently came
+   * back `undefined` -- which is precisely the wrong answer for the rule that reads them.
+   *
+   * Only this key changed shape, which is why only this one is v2.
+   */
+  leagueRosters: (leagueId: string): string => `sleeper:v2:league:${leagueId}:rosters`,
   leagueUsers: (leagueId: string): string => `sleeper:v1:league:${leagueId}:users`,
   leagueMatchups: (leagueId: string, week: number): string =>
     `sleeper:v1:league:${leagueId}:matchups:${week}`,

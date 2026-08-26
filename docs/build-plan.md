@@ -1021,6 +1021,319 @@ leagues, which `2KSports` is not).
 
 ---
 
-## Stages 4–11
+# Stage 4 — Bye weeks and the cross-league player view
+
+Spec §7, Day 7: _"Enter and double-verify all 32 rows. Build the cross-league player list that
+rule 7 will later read from."_
+
+Two deliverables that look unrelated and are not. Both are **inputs to rules that do not exist
+yet** — rule 2 (bye-week player starting, Critical) and rule 7 (cross-league inconsistency,
+Info). Stage 4 builds neither rule. It builds the two pieces of ground truth those rules stand
+on, and it does so now precisely because getting them wrong is invisible until the rule fires
+in front of a user.
+
+The spec is unusually blunt about the first one: the bye table is _"the cheapest artifact in
+this entire spec and by far the most humiliating one to get wrong — a false bye-week alarm in
+Week 5 is worse than no alarm at all."_
+
+## 4.1 Decisions
+
+### Decision 1 — verification means an auditable artifact, not a boolean someone set
+
+`team_bye_weeks.verified` already exists from Stage 1, defaulting to `false`. The temptation is
+to insert 32 rows with `verified = true` and call the spec satisfied. That records a _claim_,
+not a _verification_ — and six weeks from now nobody, including me, can tell whether the second
+source was ever actually consulted.
+
+So the source data is checked into the repo as a first-class artifact,
+`fixtures/nfl/bye-weeks-2026.json`, carrying every source URL, the date fetched, and the
+per-source table. The seed migration derives from it. Re-verification in a later season is then
+a diff, not an act of faith.
+
+**Four sources consulted, 26 Aug 2026, all unanimous** — the spec asks for two:
+
+| #   | Source             | URL                                                                  |
+| --- | ------------------ | -------------------------------------------------------------------- |
+| A   | NFL.com (official) | `nfl.com/news/2026-nfl-schedule-release-every-team-bye-week`         |
+| B   | Sports Illustrated | `si.com/nfl/nfl-bye-week-schedule-2026-full-list-for-all-32-teams`   |
+| C   | FOX Sports         | `foxsports.com/stories/nfl/2026-nfl-bye-weeks-schedule-all-32-teams` |
+| D   | Footballguys       | `footballguys.com/article/2026-nfl-schedule-bye-weeks`               |
+
+Four rather than two because each was read by a summarising model, which adds a transcription
+risk the spec's "two sources" does not anticipate. Unanimity across four independent
+transcriptions is what actually retires that risk.
+
+### Decision 2 — the spec's own prose is a checksum, and it passes
+
+Spec §5.4 describes the 2026 bye distribution in passing, while arguing for a Week 6 launch.
+That description is an independent structural constraint on the table, written by someone who
+was not thinking about validating it:
+
+| Claim (spec §5.4)                     | Table                        |
+| ------------------------------------- | ---------------------------- |
+| No byes until Week 5                  | Weeks 1–4 empty ✓            |
+| Byes run Week 5 through Week 14       | min 5, max 14 ✓              |
+| Peaking at six teams in Week 11       | W11 = 6, no week higher ✓    |
+| None at all in Week 12                | W12 = 0 ✓                    |
+| Four teams on bye in Weeks 6, 7 and 8 | 4, 4, 4 ✓                    |
+| 32 teams                              | 32 rows, 32 distinct teams ✓ |
+
+Distribution: W5 2 · W6 4 · W7 4 · W8 4 · W9 2 · W10 4 · W11 6 · W12 0 · W13 4 · W14 2.
+
+**These become a test**, not a paragraph. A typo introduced into the seed in October fails CI
+rather than fires a false Critical alarm on a Sunday.
+
+### Decision 3 — `verified` is a gate, not a label
+
+Rule 2 is Critical severity. A Critical alarm derived from unverified reference data is the
+exact failure the spec names. So the read helpers filter `verified = true` in SQL, and a test
+asserts an unverified row is invisible to them.
+
+The consequence is deliberate: if someone adds a 2027 season next year and forgets to verify
+it, **rule 2 silently stops firing** rather than silently fires wrongly. For a Critical rule
+that is the correct direction to fail.
+
+### Decision 4 — the join key is a Sleeper team abbreviation, and one of them is a ghost
+
+Rule 2 is `player.team ∈ byeWeeks[week]`, joining `players.team` to `team_bye_weeks.team`. If
+the abbreviations disagree by even one team, that team's byes never fire and nothing anywhere
+reports an error.
+
+Checked against the live `players` table (12,225 rows) rather than assumed. Sleeper uses the 32
+standard abbreviations — `ARI ATL BAL BUF CAR CHI CIN CLE DAL DEN DET GB HOU IND JAX KC LAC LAR
+LV MIA MIN NE NO NYG NYJ PHI PIT SEA SF TB TEN WAS`. All 32 appear, all 32 are in the seed.
+
+**But there are 33 distinct team codes, not 32.** One row still carries `OAK`, six years after
+the Raiders became `LV`: Jordan Wade, a guard. A guard is not a rosterable fantasy position in
+any Sleeper format, so the practical impact today is zero — but the _class_ of problem is real,
+and a silently-unjoinable team code is the one thing this table cannot afford. A test asserts
+the seed's 32 codes are a subset of the canonical set, and the live check is recorded here so a
+future relocation or rebrand is a known thing to re-run rather than a surprise.
+
+### Decision 5 — `players − starters` is NOT "benched", and rule 7 would have shipped broken
+
+This is the finding of the stage, and it came from reading a real roster payload rather than
+the spec.
+
+Rule 7 fires on `pid ∈ A.starters && pid ∈ (B.players − B.starters)` — started in one league,
+benched in another. The Sleeper roster object also carries `reserve` (injured reserve) and
+`taxi` (practice squad) arrays, **and those player ids also appear in `players`**. Verified on
+the captured fixture: every `reserve` id is present in `players` and absent from `starters`.
+
+So `players − starters` includes everyone on IR. Under the naive rule, a player you started in
+league A while he sits on IR in league B is reported as an inconsistency you should fix — when
+in fact league B is where he is handled correctly, and there is nothing to fix at all.
+
+This is not a rare shape. **9 of the 12 rosters** in the captured real league have at least one
+player on IR.
+
+Rule 7 is already flagged in spec §6 as the rule most likely to train users to ignore
+notifications, and it is first on the cut list for exactly that reason. Shipping it on top of a
+`benched` definition that counts IR as a bench decision would have made the prophecy come true.
+The fix belongs here, in the stage that defines the read model, not in Stage 10 where it would
+be found by a user:
+
+- `rosters` gains `reserve` and `taxi` (`text[]`, additive — allowed under §5.1's freeze rules,
+  which forbid _destructive_ migrations, not new nullable columns).
+- The normaliser and upsert carry them.
+- The read model defines **benched** as `players − starters − reserve − taxi`.
+
+### Decision 6 — the shared-player view is a pure Postgres read model
+
+No Sleeper calls, no cache, no rate limiter. It reads whatever the last Loop B sweep left in
+Postgres and reports `syncedAt` alongside, so a caller can see how stale it is. Cheap enough to
+be called freely, and it keeps the ten-second onboarding path (spec §2.1) unpolluted — that
+path stays exactly one route.
+
+### Decision 7 — normalised response shape: leagues once, players once
+
+The obvious shape repeats each league's lineup inside every shared player that touches it. For
+an 18-league account that is the same slot array serialised dozens of times.
+
+Instead the response has two top-level arrays: `leagues[]` carrying each league's slot lineup
+once, and `sharedPlayers[]` referencing leagues by id. This is also the shape rule 7 wants —
+its suppression clause has to look at _the other league's whole lineup_, not just at the one
+player.
+
+### Decision 8 — this stage records the slot vocabulary; it does not interpret it
+
+Rule 7's suppression clause needs to know whether a player _would be legal_ in some open or
+flex slot in league B. That requires a slot-eligibility map (`FLEX → RB|WR|TE`, and so on).
+
+It is tempting to write that map now. I am not going to, because I can only verify the labels
+that actually occur in real leagues, and a speculative map for labels I have never seen is
+precisely the guesswork this project has avoided at every stage.
+
+Observed across all 19 real leagues in the database — the complete vocabulary in evidence:
+
+```
+QB  RB  WR  TE  FLEX  WRRB_FLEX  K  DEF  BN
+```
+
+`WRRB_FLEX` is the interesting one: a flex that a TE cannot fill. Any eligibility map that
+treated every `*_FLEX` label alike would already be wrong on real data in this account.
+`SUPER_FLEX`, `REC_FLEX`, `IDP_FLEX`, `IR` and `TAXI` are all real Sleeper labels that simply
+do not appear here. Stage 10 builds the map, against leagues that contain them.
+
+What Stage 4 does emit is the raw `slotLabel` per starting slot, which is the input that map
+will consume.
+
+### Decision 9 — routes after onboarding take the id, not the username
+
+`GET /v1/users/{username}/leagues` takes a username because a brand-new user knows nothing else
+— that is the whole ten-second promise. Every route after it takes the `sleeperUserId` that
+route returned, because spec §2.1's data-model gotcha is explicit that usernames are mutable and
+the id is the identity.
+
+So: `GET /v1/users/{sleeperUserId}/shared-players`. The asymmetry under one path prefix is
+worth naming loudly rather than papering over — **the leagues route is the onboarding route and
+takes the only thing a new user has; everything else takes the stable id.** The alternative,
+looking users up by cached username, would resolve against a column that is a stale copy of a
+mutable value, and can genuinely collide after a rename.
+
+## 4.2 Slot alignment — verified, not assumed
+
+The read model labels each starting slot by position, which requires that `starters[i]`
+corresponds to the i-th non-bench entry of `roster_positions`. The spec never states this.
+
+Checked across **all 19 leagues and all 216 rosters** in the database:
+`starters.length === roster_positions.filter(not in {BN, IR, TAXI}).length` holds for every
+single roster, with zero mismatches. That is the invariant the slot labelling depends on, and
+it is now a runtime guard rather than an assumption — when it does not hold, slots are labelled
+`null` instead of being labelled wrongly.
+
+## 4.3 What lands
+
+| Path                                       | What                                                 |
+| ------------------------------------------ | ---------------------------------------------------- |
+| `fixtures/nfl/bye-weeks-2026.json`         | The four-source artifact, per-source tables and URLs |
+| `packages/db/migrations/0001_*`            | `rosters.reserve`, `rosters.taxi`                    |
+| `packages/db/migrations/0002_*`            | 32 seed rows, idempotent, `verified = true`          |
+| `packages/db/src/bye-weeks.ts`             | `byeWeekForTeam`, `byeTeamsForWeek` — verified-only  |
+| `packages/db/src/shared-players.ts`        | The cross-league read model                          |
+| `packages/contracts/src/shared-players.ts` | Wire types                                           |
+| `apps/api`                                 | `GET /v1/users/{sleeperUserId}/shared-players`       |
+
+## 4.4 Tests
+
+1. **Bye data integrity** (pure) — 32 rows, distinct teams, weeks 5–14, the §5.4 distribution
+   checksum, team codes drawn from the canonical Sleeper 32.
+2. **Cross-source agreement** (pure) — all four source tables in the fixture agree, row for row.
+   This is what makes "verified twice" a fact the build re-establishes on every run.
+3. **`verified` is a gate** (PGlite) — an unverified row is invisible to both read helpers.
+4. **Benched excludes IR and taxi** (PGlite) — the Decision 5 regression, stated as a test.
+5. **Shared players** (PGlite) — a player in one league only is absent; started-in-A/benched-in-B
+   appears; started in both appears (rule 7 filters later, the view does not pre-judge).
+6. **Slot labelling** (PGlite) — labels follow non-bench `roster_positions` positionally, and
+   degrade to `null` rather than lying when the §4.2 invariant fails.
+
+## 4.5 Definition of done
+
+1. 32 rows in Neon, `verified = true`, matching the four-source artifact.
+2. The §5.4 distribution checksum passes as a test.
+3. All 32 team codes confirmed present in the live `players` table.
+4. `reserve` / `taxi` stored, and populated for real leagues by a live Loop B sweep.
+5. `GET /v1/users/{id}/shared-players` returns real cross-league data for the 18-league account,
+   with bye weeks joined in.
+6. CI green; migration applies to a fresh Neon branch.
+
+## 4.6 Explicitly not in Stage 4
+
+No rules. No verdict. No UI — the shared-player screen is artboard 06 and belongs to Stage 7,
+and rule 7 itself is Stage 10 and first on the cut list. Nothing here changes the dashboard.
+
+No slot-eligibility map (Decision 8). No 2027 seed.
+
+## 4.7 What the build found — a second cache nobody was thinking of
+
+Adding `reserve` and `taxi` changes the shape of a type that is **cached**, so the Redis key
+was bumped from `sleeper:v1:...:rosters` to `sleeper:v2:...:rosters`. Standard, and it was not
+enough.
+
+After a full live sweep, all 216 roster rows still held an empty `reserve` — while the live
+Sleeper API, queried at the same moment, reported **5 of 14 rosters with players on IR** in one
+of this account's own leagues. The write path looked correct and the data was demonstrably
+wrong.
+
+The cause is `fetchLeagueRosters` having **two** caches, not one. Redis is the fast path;
+`rosters.synced_at` is the durable fallback (S2 Decision 4). On a Redis miss with a fresh
+`synced_at`, it rebuilds `NormalisedRoster[]` **out of Postgres** and repopulates Redis from
+it. So the first sweep after the key bump read the old shape from the database, found `reserve`
+NULL, and wrote that empty answer straight into the shiny new v2 key. The bump invalidated the
+cache that was not the problem.
+
+The general rule, worth carrying into every later stage: **a durable fallback is a cache too,
+and invalidating the fast one does not invalidate the slow one.**
+
+Fixed by migration `0003`, which nulls `rosters.synced_at` so the freshness check fails once
+and the next sweep goes to Sleeper. `upsertRosters` writes it straight back, so the cost is one
+refetch per league, and it is a no-op on a fresh database. Putting it in a migration rather than
+doing it by hand is what makes it reproducible on the PR Neon branch and on production.
+
+The 18 already-poisoned v2 Redis entries were deleted directly — they are a cache, so deleting
+them is self-healing.
+
+**After the fix, verified live:** 24 rosters with players on IR, 25 with taxi-squad players,
+where minutes earlier there had been zero of each.
+
+## 4.8 Verified against the live stack, 26 Aug 2026
+
+API run locally against real Neon, real Upstash and the real Sleeper API. Season 2026,
+preseason week 3.
+
+**The bye table.** 32 rows in Neon, all `verified = true`, distributing exactly as spec §5.4
+describes — W5 2 · W6 4 · W7 4 · W8 4 · W9 2 · W10 4 · W11 6 · W12 0 · W13 4 · W14 2.
+
+**Join keys (DoD item 3).** Every one of the 32 seeded codes joins to at least one row of the
+live `players` table. Run the other way, exactly one player team code has no bye row: `OAK`,
+the single stale Raiders record from Decision 4.
+
+**The route.** `GET /v1/users/457511950237696/shared-players` — 200 in ~1.0s, no Sleeper call.
+15 leagues, 15 shared players, every one with a bye week resolved (zero unresolved).
+
+**Slot labelling on a real 20-slot dynasty roster:**
+
+```
+D201 [QB,RB,RB,WR,WR,TE,FLEX,FLEX,FLEX,BN x11]
+  QB=6797  RB=9224  RB=11584  WR=8112  WR=11632  TE=13330  FLEX=7588  FLEX=12529  FLEX=9756
+```
+
+And on an undrafted league, all nine slots come back empty — the `"0"` sentinel collapsing
+correctly rather than being reported as a player named "0".
+
+**Four genuine rule-7 candidates** in this account right now: Blake Corum, Jakobi Meyers,
+Jaxson Dart, Tyrone Tracy — each started in one league and benched in another.
+
+**Honest limit on Decision 5.** Comparing the two formulas on this account today, the spec's
+`players - starters` produces the **same four** candidates as `players - starters - reserve -
+taxi`. Zero false positives, today. The user holds 1 player on IR and 6 on taxi squads across
+their leagues, but none of those is also started somewhere else, so the two definitions have
+not yet diverged **for this account**.
+
+That is a statement about late August, not a reason to drop the guard. It is preseason week 3;
+IR usage climbs all season, and league-wide the same sweep already stored 24 rosters with
+players on IR. The captured Stage 2 fixture — a real league, live now — has **9 of 12** rosters
+using IR. Rule 7 is Stage 10 and fires all season; the divergence is a matter of when, not
+whether. What this stage can honestly claim is that the mechanism is correct and the data is
+present, not that it has yet caught a real false positive.
+
+## 4.9 Still blocked on you — unchanged for four stages
+
+Nothing in Stage 4 needed anything from you, which is why it could be built today. These
+remain outstanding and are listed so they do not quietly disappear:
+
+1. **Play Console account + reserved app name + 15 testers.** Deliberately parked — the stated
+   preference is to have a legitimate app before bringing it to users. Worth knowing the cost:
+   the 14-day closed-test clock cannot start until this does, and it runs in parallel with
+   nothing.
+2. **Your Sleeper username** — outstanding since Stage 2. Everything above was verified against
+   `2KSports`. Rule 7 tuning (spec §5.4: "tuned against your own real leagues until it stops
+   crying wolf") needs your leagues specifically, not a stand-in.
+3. **A physical Android device with Sleeper installed** — the §4.2 deep-link probe, open since
+   rev 1, still unanswered, still an input to Stages 5 and 8.
+
+---
+
+## Stages 5–11
 
 Designed one at a time, as each becomes next.
