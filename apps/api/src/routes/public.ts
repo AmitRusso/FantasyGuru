@@ -1,4 +1,6 @@
 import type { FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
+import type { GetUserLeaguesResponse } from '@fantasyguru/contracts';
 import { NflStateNotSyncedError, syncUserLeagues } from '../services/league-sync.js';
 
 /**
@@ -10,6 +12,18 @@ import { NflStateNotSyncedError, syncUserLeagues } from '../services/league-sync
  * (registered in server.ts) keeps one client from monopolising the bucket.
  */
 export async function publicRoutes(fastify: FastifyInstance): Promise<void> {
+  // Found while actually testing the web build against this route (build-plan.md S3): Stage
+  // 2 was only ever exercised via curl and Node scripts, neither of which is subject to
+  // browser CORS enforcement, so the gap was invisible until a real browser called it. This
+  // is scoped to publicRoutes only via Fastify's plugin encapsulation -- /internal/* and
+  // /health are never meant to be called from a browser and stay unaffected.
+  //
+  // `origin: true` (reflect the caller's origin) is deliberate, not lazy: this route is
+  // public, unauthenticated, read-only, and sends no cookies or credentials, so there is no
+  // ambient authority for a restrictive origin allowlist to protect -- anyone can already
+  // call it directly. GET-only, matching the one method this route actually exposes.
+  await fastify.register(cors, { origin: true, methods: ['GET'] });
+
   fastify.get<{ Params: { username: string } }>(
     '/v1/users/:username/leagues',
     // Third of the three defences on this route (build-plan.md S2 §2.6): the cache absorbs
@@ -46,7 +60,10 @@ export async function publicRoutes(fastify: FastifyInstance): Promise<void> {
           return reply.code(404).send({ error: 'unknown Sleeper username' });
         }
 
-        return reply.code(200).send({
+        // Typed through the shared contract (build-plan.md S3 Decision 2) rather than
+        // inferred: a field renamed here without updating packages/contracts fails the
+        // typecheck instead of silently drifting from what apps/mobile expects.
+        const body: GetUserLeaguesResponse = {
           userId: result.userId,
           sleeperUserId: result.sleeperUserId,
           leagues: result.leagues.map(({ league, myRoster }) => ({
@@ -63,7 +80,8 @@ export async function publicRoutes(fastify: FastifyInstance): Promise<void> {
                 }
               : null,
           })),
-        });
+        };
+        return reply.code(200).send(body);
       } catch (error) {
         if (error instanceof NflStateNotSyncedError) {
           request.log.error({ err: error }, 'nfl_state not synced yet');

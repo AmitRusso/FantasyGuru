@@ -5,5 +5,9 @@
     "outDir": "./dist"
   },
   "include": ["src/**/*.ts"],
-  "references": [{ "path": "../../packages/db" }, { "path": "../../packages/sleeper" }]
+  "references": [
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/sleeper" }
+  ]
 }

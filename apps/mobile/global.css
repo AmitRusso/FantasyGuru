@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Design tokens (design-brief.md §4.1, §4.2), as CSS custom properties so a single semantic
+ * class name (e.g. `bg-ground`) resolves to the right value per theme automatically, via the
+ * OS-level `prefers-color-scheme` -- no runtime theme switcher needed for that to work.
+ *
+ * Dark is primary (brief §3) and is defined on :root directly rather than gated behind a
+ * `.dark` class; the light values are the override, entered under the media query. This
+ * matches "design the dark theme first" without making light mode a second-class citizen at
+ * the token layer -- Stage 7 is where light gets its own genuine pass, not an inversion.
+ */
+
+:root {
+  --color-ground: 10 14 19; /* #0A0E13 */
+  --color-surface: 18 25 34; /* #121922 */
+  --color-surface-raised: 26 36 48; /* #1A2430 */
+  --color-line: 37 49 64; /* #253140 */
+  --color-line-strong: 52 67 84; /* #344354 */
+
+  --color-text: 233 238 244; /* #E9EEF4 */
+  --color-text-2: 150 163 177; /* #96A3B1 */
+  --color-text-3: 100 113 126; /* #64717E */
+
+  --color-accent: 127 163 204; /* #7FA3CC */
+  --color-accent-pressed: 160 191 224; /* #A0BFE0 */
+
+  /* Status -- the ONLY saturated colour anywhere in the app (brief §2). Never used for
+     branding, decoration, emphasis or category coding -- size, weight and space carry that
+     instead. */
+  --color-critical: 255 111 94; /* #FF6F5E */
+  --color-critical-on: 46 21 18; /* #2E1512 */
+  --color-warning: 245 179 60; /* #F5B33C */
+  --color-warning-on: 44 33 16; /* #2C2110 */
+  --color-ok: 79 217 155; /* #4FD99B */
+  --color-ok-on: 16 40 30; /* #10281E */
+  --color-neutral: 124 139 153; /* #7C8B99 */
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-ground: 244 246 248; /* #F4F6F8 */
+    --color-surface: 255 255 255; /* #FFFFFF */
+    --color-surface-raised: 235 239 243; /* #EBEFF3 */
+    --color-line: 221 227 234; /* #DDE3EA */
+    --color-line-strong: 194 203 213; /* #C2CBD5 */
+
+    --color-text: 16 23 32; /* #101720 */
+    --color-text-2: 90 103 115; /* #5A6773 */
+    --color-text-3: 133 147 160; /* #8593A0 */
+
+    --color-accent: 47 95 148; /* #2F5F94 */
+    --color-accent-pressed: 31 70 117; /* #1F4675 */
+
+    --color-critical: 196 52 42; /* #C4342A */
+    --color-critical-on: 251 233 231; /* #FBE9E7 */
+    --color-warning: 150 98 10; /* #96620A */
+    --color-warning-on: 252 242 223; /* #FCF2DF */
+    --color-ok: 16 101 63; /* #10653F */
+    --color-ok-on: 227 243 234; /* #E3F3EA */
+    --color-neutral: 100 113 126; /* #64717E */
+  }
+}

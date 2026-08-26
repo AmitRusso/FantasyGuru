@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "./packages/contracts" },
     { "path": "./packages/sleeper" },
     { "path": "./packages/db" },
     { "path": "./apps/api" }

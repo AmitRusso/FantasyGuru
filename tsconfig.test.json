@@ -14,5 +14,13 @@
     "eslint.config.js",
     "vitest.config.ts",
     "packages/db/drizzle.config.ts"
+  ],
+  "exclude": [
+    // apps/mobile has its own tsconfig (Expo's bundler-mode config, no "type": "module" in
+    // its package.json -- Metro handles ESM/CJS interop itself) and its own `tsc --noEmit`,
+    // checked separately by design (build-plan.md S3 §3.9). This root config's NodeNext +
+    // verbatimModuleSyntax settings assume the opposite and fail on plain `import`/`export`
+    // here for a reason that has nothing to do with the code being wrong.
+    "apps/mobile/**"
   ]
 }
