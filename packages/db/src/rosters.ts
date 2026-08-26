@@ -42,6 +42,8 @@ export async function getRostersForLeague(
       ownerUserId: rosters.ownerUserId,
       players: rosters.players,
       starters: rosters.starters,
+      reserve: rosters.reserve,
+      taxi: rosters.taxi,
     })
     .from(rosters)
     .where(eq(rosters.leagueId, leagueId));
@@ -51,6 +53,8 @@ export async function getRostersForLeague(
     ownerUserId: row.ownerUserId,
     players: row.players ?? [],
     starters: row.starters ?? [],
+    reserve: row.reserve ?? [],
+    taxi: row.taxi ?? [],
   }));
 }
 
@@ -90,6 +94,12 @@ export async function upsertRosters(
         // confirmed live 25 Aug 2026 as the string "0" -- see build-plan.md S2 §2.8 item 2).
         // The cast corrects a type-level gap, not a runtime one.
         starters: roster.starters as string[],
+        // Belt and braces alongside the `sleeper:v2:` cache-key bump: a roster reconstructed
+        // from anything written by an older build has no `reserve`/`taxi` at all, and an
+        // `undefined` here would reach Postgres as a column default rather than as the empty
+        // list it actually means.
+        reserve: roster.reserve ?? [],
+        taxi: roster.taxi ?? [],
         syncedAt: now,
       })),
     )
@@ -99,6 +109,8 @@ export async function upsertRosters(
         ownerUserId: sql`excluded.owner_user_id`,
         players: sql`excluded.players`,
         starters: sql`excluded.starters`,
+        reserve: sql`excluded.reserve`,
+        taxi: sql`excluded.taxi`,
         syncedAt: sql`excluded.synced_at`,
       },
     });

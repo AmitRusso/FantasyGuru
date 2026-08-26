@@ -272,6 +272,10 @@ export function normaliseRoster(raw: unknown): NormalisedRoster | null {
     ownerUserId: str(roster.owner_id),
     players: strArray(roster.players),
     starters: starterArray(roster.starters),
+    // `strArray` not `starterArray`: unlike `starters` these are not positional, so dropping
+    // nulls is correct here and would be data loss there (build-plan.md S2 §2.8).
+    reserve: strArray(roster.reserve),
+    taxi: strArray(roster.taxi),
   };
 }
 

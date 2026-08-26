@@ -25,7 +25,10 @@ function inMemoryStore(): CacheStore {
 
 describe('CacheKeys', () => {
   it('keys league-scoped reads by league, per build-plan.md S2 §2.4', () => {
-    expect(CacheKeys.leagueRosters('abc')).toBe('sleeper:v1:league:abc:rosters');
+    // v2 for rosters only: the cached VALUE is a `NormalisedRoster[]`, and Stage 4 added
+    // `reserve`/`taxi` to that type, so entries written by an older build are a stale shape
+    // and must not be read back (build-plan.md S4).
+    expect(CacheKeys.leagueRosters('abc')).toBe('sleeper:v2:league:abc:rosters');
     expect(CacheKeys.leagueUsers('abc')).toBe('sleeper:v1:league:abc:users');
     expect(CacheKeys.leagueMatchups('abc', 6)).toBe('sleeper:v1:league:abc:matchups:6');
   });
@@ -35,7 +38,16 @@ describe('CacheKeys', () => {
   });
 
   it('carries a version prefix as a manual kill switch', () => {
-    expect(CacheKeys.leagueRosters('abc')).toMatch(/^sleeper:v1:/);
+    // The switch is per-key, and Stage 4 is the first time it was actually thrown: a shape
+    // change to one cached type must not invalidate the others.
+    for (const key of [
+      CacheKeys.leagueRosters('abc'),
+      CacheKeys.leagueUsers('abc'),
+      CacheKeys.userLeagues('u1'),
+      CacheKeys.leagueMatchups('abc', 6),
+    ]) {
+      expect(key).toMatch(/^sleeper:v\d+:/);
+    }
   });
 });
 

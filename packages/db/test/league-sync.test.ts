@@ -149,8 +149,17 @@ describe('upsertRosters', () => {
         ownerUserId: 'owner-1',
         players: ['4983', 'CLE'],
         starters: ['4983', null, 'CLE'],
+        reserve: [],
+        taxi: [],
       },
-      { rosterId: 2, ownerUserId: 'owner-2', players: ['1234'], starters: ['1234'] },
+      {
+        rosterId: 2,
+        ownerUserId: 'owner-2',
+        players: ['1234'],
+        starters: ['1234'],
+        reserve: [],
+        taxi: [],
+      },
     ]);
 
     const rows = await db
@@ -178,7 +187,14 @@ describe('upsertRosters', () => {
 
   it('updates on conflict rather than duplicating', async () => {
     await upsertRosters(db, 'league-rosters', [
-      { rosterId: 1, ownerUserId: 'owner-1', players: ['9999'], starters: ['9999'] },
+      {
+        rosterId: 1,
+        ownerUserId: 'owner-1',
+        players: ['9999'],
+        starters: ['9999'],
+        reserve: [],
+        taxi: [],
+      },
     ]);
 
     const rows = await db

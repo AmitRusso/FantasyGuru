@@ -1,0 +1,117 @@
+{
+  "$comment": [
+    "Spec §3: 'You need your own 32-row team_bye_weeks table, hand-entered from the published",
+    "schedule. It is the cheapest artifact in this entire spec and by far the most humiliating",
+    "one to get wrong -- a false bye-week alarm in Week 5 is worse than no alarm at all. Enter",
+    "it, then verify it a second time from a different source.'",
+    "",
+    "This file IS that verification, recorded rather than claimed (build-plan.md S4 Decision 1).",
+    "Each source below was read independently and transcribed in full; the build asserts they",
+    "agree row for row, so 'verified twice' is a fact re-established on every test run rather",
+    "than a boolean somebody once set to true.",
+    "",
+    "Four sources, not the two the spec asks for, because each page was read through a",
+    "summarising model -- a transcription risk the spec does not anticipate. Unanimity across",
+    "four independent transcriptions is what retires it.",
+    "",
+    "Keys are Sleeper team abbreviations, confirmed against all 12,225 rows of the live",
+    "players table (build-plan.md S4 Decision 4). They are the join key for rule 2 and must",
+    "match players.team exactly."
+  ],
+  "season": "2026",
+  "fetchedAt": "2026-08-26",
+  "sources": [
+    {
+      "id": "A",
+      "name": "NFL.com (official)",
+      "url": "https://www.nfl.com/news/2026-nfl-schedule-release-every-team-bye-week"
+    },
+    {
+      "id": "B",
+      "name": "Sports Illustrated",
+      "url": "https://www.si.com/nfl/nfl-bye-week-schedule-2026-full-list-for-all-32-teams"
+    },
+    {
+      "id": "C",
+      "name": "FOX Sports",
+      "url": "https://www.foxsports.com/stories/nfl/2026-nfl-bye-weeks-schedule-all-32-teams"
+    },
+    {
+      "id": "D",
+      "name": "Footballguys",
+      "url": "https://www.footballguys.com/article/2026-nfl-schedule-bye-weeks"
+    }
+  ],
+  "teamNames": {
+    "ARI": "Arizona Cardinals",
+    "ATL": "Atlanta Falcons",
+    "BAL": "Baltimore Ravens",
+    "BUF": "Buffalo Bills",
+    "CAR": "Carolina Panthers",
+    "CHI": "Chicago Bears",
+    "CIN": "Cincinnati Bengals",
+    "CLE": "Cleveland Browns",
+    "DAL": "Dallas Cowboys",
+    "DEN": "Denver Broncos",
+    "DET": "Detroit Lions",
+    "GB": "Green Bay Packers",
+    "HOU": "Houston Texans",
+    "IND": "Indianapolis Colts",
+    "JAX": "Jacksonville Jaguars",
+    "KC": "Kansas City Chiefs",
+    "LAC": "Los Angeles Chargers",
+    "LAR": "Los Angeles Rams",
+    "LV": "Las Vegas Raiders",
+    "MIA": "Miami Dolphins",
+    "MIN": "Minnesota Vikings",
+    "NE": "New England Patriots",
+    "NO": "New Orleans Saints",
+    "NYG": "New York Giants",
+    "NYJ": "New York Jets",
+    "PHI": "Philadelphia Eagles",
+    "PIT": "Pittsburgh Steelers",
+    "SEA": "Seattle Seahawks",
+    "SF": "San Francisco 49ers",
+    "TB": "Tampa Bay Buccaneers",
+    "TEN": "Tennessee Titans",
+    "WAS": "Washington Commanders"
+  },
+  "byWeekAsPublished": {
+    "5": ["CAR", "KC"],
+    "6": ["CIN", "DET", "MIA", "MIN"],
+    "7": ["BUF", "JAX", "LAC", "WAS"],
+    "8": ["HOU", "NO", "NYG", "SF"],
+    "9": ["PIT", "TEN"],
+    "10": ["CHI", "DEN", "PHI", "TB"],
+    "11": ["ATL", "CLE", "GB", "LAR", "NE", "SEA"],
+    "12": [],
+    "13": ["BAL", "IND", "LV", "NYJ"],
+    "14": ["ARI", "DAL"]
+  },
+  "transcriptions": {
+    "A": {
+      "ARI": 14, "ATL": 11, "BAL": 13, "BUF": 7, "CAR": 5, "CHI": 10, "CIN": 6, "CLE": 11,
+      "DAL": 14, "DEN": 10, "DET": 6, "GB": 11, "HOU": 8, "IND": 13, "JAX": 7, "KC": 5,
+      "LAC": 7, "LAR": 11, "LV": 13, "MIA": 6, "MIN": 6, "NE": 11, "NO": 8, "NYG": 8,
+      "NYJ": 13, "PHI": 10, "PIT": 9, "SEA": 11, "SF": 8, "TB": 10, "TEN": 9, "WAS": 7
+    },
+    "B": {
+      "ARI": 14, "ATL": 11, "BAL": 13, "BUF": 7, "CAR": 5, "CHI": 10, "CIN": 6, "CLE": 11,
+      "DAL": 14, "DEN": 10, "DET": 6, "GB": 11, "HOU": 8, "IND": 13, "JAX": 7, "KC": 5,
+      "LAC": 7, "LAR": 11, "LV": 13, "MIA": 6, "MIN": 6, "NE": 11, "NO": 8, "NYG": 8,
+      "NYJ": 13, "PHI": 10, "PIT": 9, "SEA": 11, "SF": 8, "TB": 10, "TEN": 9, "WAS": 7
+    },
+    "C": {
+      "ARI": 14, "ATL": 11, "BAL": 13, "BUF": 7, "CAR": 5, "CHI": 10, "CIN": 6, "CLE": 11,
+      "DAL": 14, "DEN": 10, "DET": 6, "GB": 11, "HOU": 8, "IND": 13, "JAX": 7, "KC": 5,
+      "LAC": 7, "LAR": 11, "LV": 13, "MIA": 6, "MIN": 6, "NE": 11, "NO": 8, "NYG": 8,
+      "NYJ": 13, "PHI": 10, "PIT": 9, "SEA": 11, "SF": 8, "TB": 10, "TEN": 9, "WAS": 7
+    },
+    "D": {
+      "ARI": 14, "ATL": 11, "BAL": 13, "BUF": 7, "CAR": 5, "CHI": 10, "CIN": 6, "CLE": 11,
+      "DAL": 14, "DEN": 10, "DET": 6, "GB": 11, "HOU": 8, "IND": 13, "JAX": 7, "KC": 5,
+      "LAC": 7, "LAR": 11, "LV": 13, "MIA": 6, "MIN": 6, "NE": 11, "NO": 8, "NYG": 8,
+      "NYJ": 13, "PHI": 10, "PIT": 9, "SEA": 11, "SF": 8, "TB": 10, "TEN": 9, "WAS": 7
+    }
+  }
+}

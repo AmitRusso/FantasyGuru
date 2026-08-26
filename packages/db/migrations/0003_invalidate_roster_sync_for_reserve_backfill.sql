@@ -1,0 +1,22 @@
+-- Force one refetch of every roster from Sleeper, so the columns added in 0001 get real values.
+--
+-- Migration 0001 added `reserve` and `taxi`, which exist on every roster Sleeper returns but
+-- were NULL on all 216 pre-existing rows. Bumping the Redis key to `sleeper:v2:` was not
+-- enough, and finding out why is the useful part:
+--
+-- `fetchLeagueRosters` (apps/api/src/services/league-sync.ts) has TWO caches, not one. Redis
+-- is the fast path, and `rosters.synced_at` is the durable fallback (build-plan.md S2
+-- Decision 4) -- on a Redis miss with a fresh `synced_at`, it rebuilds `NormalisedRoster[]`
+-- straight out of Postgres and repopulates Redis from it. So the very first sweep after the
+-- key bump read the OLD shape out of the database, found `reserve` NULL, and wrote that empty
+-- answer back into the shiny new v2 key. Verified: Sleeper reported 5 of 14 rosters with
+-- players on IR in one of this account's real leagues at the same moment our table held none.
+--
+-- The general rule, worth remembering the next time a cached type gains a field: a durable
+-- fallback is also a cache, and invalidating the fast one does not invalidate the slow one.
+--
+-- Nulling `synced_at` makes that freshness check fail, so the next sweep goes to Sleeper.
+-- `upsertRosters` writes it back immediately, so the cost is exactly one refetch per league.
+-- A no-op on a fresh database, which is why it is safe to run everywhere.
+
+UPDATE "rosters" SET "synced_at" = NULL;

@@ -112,6 +112,8 @@ function roster(
     ownerUserId,
     players: starters.filter((s): s is string => s !== null),
     starters,
+    reserve: [],
+    taxi: [],
   };
 }
 
